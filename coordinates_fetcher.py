@@ -1,6 +1,6 @@
 """
-enhanced_coordinates_fetcher.py
-Enhanced version with intelligent parsing of location specifications
+coordinates_fetcher.py
+Intelligent parsing of location specifications
 """
 
 import json
@@ -20,7 +20,7 @@ class LocationSpec:
     display_info: str
     original_text: str
 
-class EnhancedCoordinatesFetcher:
+class CoordinatesFetcher:
     def __init__(self):
         self.rome_bbox = {
             'south': 41.8,
@@ -303,7 +303,7 @@ class EnhancedCoordinatesFetcher:
                             variants.append(' '.join(last_three))
     
     def query_street_coordinates(self, street_name: str, zone_name: str = None) -> Optional[Dict]:
-        """Query coordinates for a location specification with enhanced parsing"""
+        """Query coordinates for a location specification with parsing"""
         
         # Parse the location specification
         location_spec = self.parse_location_specification(street_name)
@@ -491,7 +491,7 @@ class EnhancedCoordinatesFetcher:
             return None
     
     def fetch_all_coordinates(self, ordinances_file: str) -> Dict:
-        """Fetch coordinates for all streets in all ordinances with enhanced parsing."""
+        """Fetch coordinates for all streets in all ordinances with parsing."""
         
         # Load ordinances
         try:
@@ -510,7 +510,7 @@ class EnhancedCoordinatesFetcher:
                 total_streets += len(streets)
         
         print(f"🏛️ Processing {total_streets} streets from {len(ordinances_data)} ordinances...")
-        print(f"🧠 Using enhanced parsing for location specifications...")
+        print(f"🧠 Using parsing for location specifications...")
         
         current_street = 0
         
@@ -543,13 +543,13 @@ class EnhancedCoordinatesFetcher:
         
         return results
     
-    def save_coordinates(self, coordinates: Dict, output_file: str = "enhanced_coordinates.json"):
-        """Save enhanced coordinates to JSON file."""
+    def save_coordinates(self, coordinates: Dict, output_file: str = "coordinates.json"):
+        """Save  coordinates to JSON file."""
         
         with open(output_file, "w", encoding="utf-8") as f:
             json.dump(coordinates, f, ensure_ascii=False, indent=2)
         
-        print(f"💾 Enhanced coordinates saved to {output_file}")
+        print(f"💾 coordinates saved to {output_file}")
         
         # Print summary
         total_found = 0
@@ -566,7 +566,7 @@ class EnhancedCoordinatesFetcher:
                         if spec_type in type_counts:
                             type_counts[spec_type] += 1
         
-        print(f"\n📊 Enhanced Processing Summary:")
+        print(f"\n📊 Processing Summary:")
         print(f"   Total streets: {total_streets}")
         print(f"   Coordinates found: {total_found}")
         print(f"   Success rate: {total_found/total_streets*100:.1f}%")
@@ -578,11 +578,11 @@ class EnhancedCoordinatesFetcher:
                 print(f"   {icon} {spec_type}: {count} ({color})")
 
 def main():
-    """Main function to fetch enhanced coordinates."""
+    """Main function to fetch  coordinates."""
     
-    fetcher = EnhancedCoordinatesFetcher()
+    fetcher = CoordinatesFetcher()
     
-    # Fetch all coordinates with enhanced parsing
+    # Fetch all coordinates with parsing
     coordinates = fetcher.fetch_all_coordinates("ordinanze.json")
     
     if coordinates:

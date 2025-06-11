@@ -10,7 +10,7 @@ def embed_coordinates():
     """Embed coordinates into the baseline HTML viewer"""
     
     # File paths
-    coordinates_file = 'enhanced_coordinates.json'  # or 'enhanced_coordinates.json' 
+    coordinates_file = 'coordinates.json'  
     baseline_html = 'rome_viewer.html'  # The clean HTML we just created
     output_file = 'rome_viewer_embedded.html'
     
