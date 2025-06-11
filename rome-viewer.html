@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rome Ordinances Viewer with Bounding Boxes</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            display: flex;
+            height: 100vh;
+        }
+        
+        .sidebar {
+            width: 380px;
+            background: #f8f9fa;
+            border-right: 1px solid #ddd;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        
+        .map-container {
+            flex: 1;
+        }
+        
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+        
+        .bbox-controls {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            padding: 15px;
+        }
+        
+        .bbox-controls h3 {
+            margin: 0 0 10px 0;
+            color: #333;
+            font-size: 1.1rem;
+        }
+        
+        .bbox-item {
+            display: flex;
+            align-items: center;
+            margin: 8px 0;
+            padding: 8px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .bbox-item:hover {
+            background: #f0f0f0;
+        }
+        
+        .bbox-item.active {
+            background: #e3f2fd;
+        }
+        
+        .bbox-item input[type="checkbox"] {
+            margin-right: 10px;
+            width: 16px;
+            height: 16px;
+        }
+        
+        .color-indicator {
+            width: 18px;
+            height: 18px;
+            border-radius: 3px;
+            margin-right: 10px;
+            border: 1px solid rgba(0,0,0,0.3);
+        }
+        
+        .ordinance {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            padding: 15px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .ordinance:hover {
+            background: #e3f2fd;
+        }
+        
+        .ordinance.active {
+            background: #e8f5e8;
+            border-color: #4caf50;
+        }
+        
+        .zone {
+            background: #f1f1f1;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin: 8px 0 8px 20px;
+            padding: 12px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .zone:hover {
+            background: #e1f5fe;
+        }
+        
+        .zone.active {
+            background: #c8e6c9;
+        }
+        
+        .street {
+            background: #fafafa;
+            border: 1px solid #bbb;
+            border-radius: 4px;
+            margin: 6px 0 6px 40px;
+            padding: 10px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background 0.3s;
+        }
+        
+        .street:hover {
+            background: #fff3e0;
+        }
+        
+        .street.active {
+            background: #ffcc80;
+            font-weight: bold;
+        }
+        
+        .street.no-coords {
+            background: #ffebee;
+            color: #666;
+            cursor: not-allowed;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .info-panel {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 0.9em;
+            max-width: 280px;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h2>🗺️ Rome Ordinances</h2>
+        
+        <!-- Bounding Box Controls -->
+        <div class="bbox-controls">
+            <h3>📍 Search Zone Boundaries</h3>
+            <div id="bbox-controls">
+                <!-- Will be populated by JavaScript -->
+            </div>
+        </div>
+        
+        <!-- Ordinances List -->
+        <h3>🏛️ Ordinances</h3>
+        <div id="ordinances-container">
+            <div class="loading">Loading coordinates...</div>
+        </div>
+    </div>
+    
+    <div class="map-container">
+        <div id="map"></div>
+        <div id="info-panel" class="info-panel hidden">
+            <div id="info-content"></div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+    <script>
+        let coordinatesData = {};
+        let map;
+        let currentMarkers = [];
+        let bboxRectangles = {};
+        
+        // Bounding box definitions (from coordinates fetcher)
+        const zoneBboxes = {
+            rome: {
+                south: 41.8,
+                west: 12.4,
+                north: 42.0,
+                east: 12.6,
+                color: '#e74c3c',
+                name: 'Rome (Full Area)',
+                opacity: 0.3
+            },
+            esquilino: {
+                south: 41.888,
+                west: 12.495,
+                north: 41.905,
+                east: 12.52,
+                color: '#3498db',
+                name: 'Esquilino',
+                opacity: 0.5
+            },
+            tuscolano: {
+                south: 41.85,
+                west: 12.512,
+                north: 41.883,
+                east: 12.56,
+                color: '#2ecc71',
+                name: 'Tuscolano',
+                opacity: 0.5
+            },
+            valle_aurelia: {
+                south: 41.889,
+                west: 12.41,
+                north: 41.925,
+                east: 12.46,
+                color: '#f39c12',
+                name: 'Valle Aurelia',
+                opacity: 0.5
+            }
+        };
+        
+        // Initialize map
+        function initMap() {
+            map = L.map('map').setView([41.9028, 12.4964], 12);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+            
+            initBboxControls();
+        }
+        
+        // Initialize bounding box controls
+        function initBboxControls() {
+            const container = document.getElementById('bbox-controls');
+            
+            Object.entries(zoneBboxes).forEach(([key, bbox]) => {
+                // Create rectangle
+                const bounds = [[bbox.south, bbox.west], [bbox.north, bbox.east]];
+                const rectangle = L.rectangle(bounds, {
+                    color: bbox.color,
+                    weight: 2,
+                    fillOpacity: bbox.opacity * 0.3,
+                    opacity: 0.8
+                });
+                
+                // Add popup with zone info
+                const area = ((bbox.north - bbox.south) * (bbox.east - bbox.west) * 111 * 111).toFixed(2);
+                rectangle.bindPopup(`
+                    <strong>${bbox.name}</strong><br>
+                    📍 South: ${bbox.south}<br>
+                    📍 North: ${bbox.north}<br>
+                    📍 West: ${bbox.west}<br>
+                    📍 East: ${bbox.east}<br>
+                    📏 Area: ~${area} km²
+                `);
+                
+                bboxRectangles[key] = rectangle;
+                
+                // Create control element
+                const controlDiv = document.createElement('div');
+                controlDiv.className = 'bbox-item';
+                controlDiv.innerHTML = `
+                    <input type="checkbox" id="bbox-${key}" ${key === 'rome' ? 'checked' : ''}>
+                    <div class="color-indicator" style="background-color: ${bbox.color}"></div>
+                    <label for="bbox-${key}">${bbox.name}</label>
+                `;
+                
+                const checkbox = controlDiv.querySelector('input');
+                
+                // Add event listener
+                checkbox.addEventListener('change', (e) => {
+                    if (e.target.checked) {
+                        map.addLayer(rectangle);
+                        controlDiv.classList.add('active');
+                    } else {
+                        map.removeLayer(rectangle);
+                        controlDiv.classList.remove('active');
+                    }
+                });
+                
+                // Click on div toggles checkbox
+                controlDiv.addEventListener('click', (e) => {
+                    if (e.target !== checkbox) {
+                        checkbox.click();
+                    }
+                });
+                
+                // Initially show Rome bbox
+                if (key === 'rome') {
+                    map.addLayer(rectangle);
+                    controlDiv.classList.add('active');
+                }
+                
+                container.appendChild(controlDiv);
+            });
+        }
+        
+        // Load coordinates from JSON file
+        async function loadCoordinates() {
+            try {
+                // Try to load from file first
+                const response = await fetch('./coordinates.json');
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                coordinatesData = await response.json();
+                generateInterface();
+                console.log('✅ Coordinates loaded successfully');
+            } catch (error) {
+                console.error('❌ Error loading coordinates:', error);
+                
+                // Show instructions for how to fix
+                document.getElementById('ordinances-container').innerHTML = `
+                    <div style="color: red; text-align: center; padding: 20px; background: #ffebee; border-radius: 8px;">
+                        <strong>❌ Error loading coordinates.json</strong><br><br>
+                        <div style="text-align: left; font-size: 0.9em;">
+                            <strong>Option 1 - Use HTTP Server:</strong><br>
+                            1. Put coordinates.json in same folder as this HTML<br>
+                            2. Run: <code>python -m http.server 8000</code><br>
+                            3. Open: <code>http://localhost:8000/rome_viewer.html</code><br><br>
+                            
+                            <strong>Option 2 - Use embed script:</strong><br>
+                            1. Run the embed_coordinates.py script<br>
+                            2. Open the generated embedded HTML file<br>
+                            3. No server needed!
+                        </div>
+                    </div>
+                `;
+            }
+        }
+        
+        function clearMap() {
+            currentMarkers.forEach(marker => map.removeLayer(marker));
+            currentMarkers = [];
+            document.getElementById('info-panel').classList.add('hidden');
+        }
+        
+        function showStreetCoordinates(streetName, coordinates) {
+            clearMap();
+            
+            if (!coordinates || coordinates.length === 0) {
+                alert('No coordinates available for: ' + streetName);
+                return;
+            }
+            
+            // Add red dots for each coordinate (NO LINES)
+            coordinates.forEach((coord, index) => {
+                const marker = L.circleMarker([coord[0], coord[1]], {
+                    radius: 3,
+                    fillColor: '#ff0000',
+                    color: '#darkred',
+                    weight: 1,
+                    opacity: 1,
+                    fillOpacity: 0.8
+                }).addTo(map);
+                
+                marker.bindPopup(`Point ${index + 1}: ${coord[0].toFixed(6)}, ${coord[1].toFixed(6)}`);
+                currentMarkers.push(marker);
+            });
+            
+            // Fit map to show all points
+            if (coordinates.length > 0) {
+                const group = new L.featureGroup(currentMarkers);
+                map.fitBounds(group.getBounds().pad(0.1));
+            }
+            
+            // Show info panel
+            document.getElementById('info-content').innerHTML = `
+                <strong>${streetName}</strong><br>
+                <span style="color: #ff0000;">●</span> ${coordinates.length} coordinate points<br>
+                <small>Red dots show the geometry points that define this street</small>
+            `;
+            document.getElementById('info-panel').classList.remove('hidden');
+        }
+        
+        function generateInterface() {
+            const container = document.getElementById('ordinances-container');
+            let html = '';
+            
+            Object.entries(coordinatesData).forEach(([ordId, ordData]) => {
+                const metadata = ordData.metadata;
+                
+                html += `
+                    <div class="ordinance" onclick="toggleOrdinance('${ordId}')">
+                        <strong>📋 Ordinanza ${metadata.protocol}</strong><br>
+                        <small>${metadata.date} - ${metadata.title}</small>
+                    </div>
+                    <div id="zones-${ordId}" class="hidden">
+                `;
+                
+                Object.entries(ordData.zones).forEach(([zoneName, streets], zoneIndex) => {
+                    const streetCount = Object.keys(streets).length;
+                    const coordsCount = Object.values(streets).filter(coords => coords !== null).length;
+                    
+                    html += `
+                        <div class="zone" onclick="toggleZone('${ordId}', ${zoneIndex})">
+                            <strong>📍 ${zoneName}</strong><br>
+                            <small>${coordsCount}/${streetCount} streets with coordinates</small>
+                        </div>
+                        <div id="streets-${ordId}-${zoneIndex}" class="hidden">
+                    `;
+                    
+                    Object.entries(streets).forEach(([streetName, coordinates]) => {
+                        const hasCoords = coordinates !== null;
+                        const cssClass = hasCoords ? 'street' : 'street no-coords';
+                        const onclick = hasCoords ? `selectStreet('${streetName}')` : '';
+                        const pointsText = hasCoords ? `(${coordinates.length} points)` : '(no coords)';
+                        
+                        html += `
+                            <div class="${cssClass}" onclick="${onclick}">
+                                ${streetName} <small>${pointsText}</small>
+                            </div>
+                        `;
+                    });
+                    
+                    html += '</div>';
+                });
+                
+                html += '</div>';
+            });
+            
+            container.innerHTML = html;
+        }
+        
+        function toggleOrdinance(ordId) {
+            const element = document.getElementById('zones-' + ordId);
+            element.classList.toggle('hidden');
+            
+            const ordinance = document.querySelector(`[onclick="toggleOrdinance('${ordId}')"]`);
+            ordinance.classList.toggle('active');
+        }
+        
+        function toggleZone(ordId, zoneIndex) {
+            const element = document.getElementById(`streets-${ordId}-${zoneIndex}`);
+            element.classList.toggle('hidden');
+            
+            const zone = document.querySelector(`[onclick="toggleZone('${ordId}', ${zoneIndex}')"]`);
+            zone.classList.toggle('active');
+        }
+        
+        function selectStreet(streetName) {
+            // Clear previous selections
+            document.querySelectorAll('.street').forEach(s => s.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Find coordinates for this street
+            let coordinates = null;
+            
+            Object.values(coordinatesData).forEach(ordData => {
+                Object.values(ordData.zones).forEach(streets => {
+                    if (streets[streetName]) {
+                        coordinates = streets[streetName];
+                    }
+                });
+            });
+            
+            if (coordinates) {
+                showStreetCoordinates(streetName, coordinates);
+            }
+        }
+        
+        // Initialize everything
+        initMap();
+        loadCoordinates();
+        
+        console.log('🗺️ Rome Ordinances Viewer with Bounding Boxes loaded');
+    </script>
+</body>
+</html>

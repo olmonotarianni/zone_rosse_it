@@ -1,0 +1,79 @@
+{
+  "ordinance_6747": {
+    "protocol": "6747",
+    "date": "2025-01-08",
+    "validity": {
+      "start": "2025-01-08",
+      "end": "2025-03-08"
+    },
+    "title": "Prima ordinanza prefettizia",
+    "zones": {
+      "Zona Esquilino": [
+        "Via Giovanni Giolitti",
+        "Via Giovanni Amendola",
+        "Via Filippo Turati",
+        "Via Principe Amedeo",
+        "Via Daniele Manin",
+        "Via Vincenzo Gioberti",
+        "Piazza Manfredo Fanti",
+        "Via Carlo Cattaneo",
+        "Via Enrico Cialdini",
+        "Via Urbano Rattazzi",
+        "Via Alfredo Cappellini",
+        "Via Mamiani",
+        "Via Bettino Ricasoli",
+        "Via La Marmora",
+        "Piazza Vittorio Emanuele II"
+      ],
+      "Zona Tuscolano": [
+        "Via Monselice",
+        "Via Adria",
+        "Via Tuscolana (fronte civico 212)",
+        "Via Mestre",
+        "Piazza Ragusa"
+      ]
+    }
+  },
+  "ordinance_133331": {
+    "protocol": "133331",
+    "date": "2025-03-26",
+    "validity": {
+      "start": "2025-03-26",
+      "end": "2025-05-26"
+    },
+    "title": "Seconda ordinanza prefettizia",
+    "zones": {
+      "Zona Stazione Termini - Esquilino": [
+        "Piazza dei Cinquecento",
+        "Via Marsala",
+        "Via Giovanni Giolitti",
+        "Via Giovanni Amendola",
+        "Via Filippo Turati",
+        "Via Principe Amedeo",
+        "Via Daniele Manin",
+        "Via Vincenzo Gioberti",
+        "Piazza Manfredo Fanti",
+        "Via Carlo Cattaneo",
+        "Via Enrico Cialdini",
+        "Via Urbano Rattazzi",
+        "Via Alfredo Cappellini",
+        "Via Mamiani",
+        "Via Bettino Ricasoli",
+        "Via La Marmora",
+        "Piazza Vittorio Emanuele II"
+      ],
+      "Zona Valle Aurelia": [
+        "Viale di Valle Aurelia",
+        "Via Ettore Stampini",
+        "Via Umberto Moricca",
+        "Via Baldo degli Ubaldi",
+        "Via Giacinto De Vecchi Pieralice",
+        "Via Anastasio II",
+        "Via Angelo Emo",
+        "Via Giuseppe di Bartolo",
+        "Via di Valle Aurelia",
+        "Via Giuseppe Bonaccorsi"
+      ]
+    }
+  }
+}
