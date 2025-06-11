@@ -45,8 +45,8 @@
     "zones": {
       "Zona Stazione Termini - Esquilino": [
         "Piazza dei Cinquecento",
-        "Via Marsala",
-        "Via Giovanni Giolitti",
+        "Via Marsala tratto compreso tra piazza dei Cinquecento e sottopasso Pettinelli",
+        "Via Giovanni Giolitti tratto compreso tra piazza dei Cinquecento e sottopasso Pettinelli",
         "Via Giovanni Amendola",
         "Via Filippo Turati",
         "Via Principe Amedeo",
@@ -62,17 +62,18 @@
         "Via La Marmora",
         "Piazza Vittorio Emanuele II"
       ],
-      "Zona Valle Aurelia": [
-        "Viale di Valle Aurelia",
-        "Via Ettore Stampini",
-        "Via Umberto Moricca",
-        "Via Baldo degli Ubaldi",
-        "Via Giacinto De Vecchi Pieralice",
-        "Via Anastasio II",
-        "Via Angelo Emo",
-        "Via Giuseppe di Bartolo",
-        "Via di Valle Aurelia",
-        "Via Giuseppe Bonaccorsi"
+      "Assi viari inclusi nel perimetro Zona Valle Aurelia": [
+        "Viale di Valle Aurelia incrocio con Via Ettore Stampini",
+        "Via Ettore Stampini incrocio con Via Umberto Moricca",
+        "Via Umberto Moricca incrocio con Via Baldo degli Ubaldi",
+        "Via Baldo degli Ubaldi incrocio con Via Giacinto De Vecchi Pieralice",
+        "Via Giacinto de Vecchi Pieralice incrocio con Via Anastasio II",
+        "Via Anastasio II incrocio con Via Angelo Emo",
+        "Via Angelo Emo incrocio con Via Giuseppe di Bartolo",
+        "Via Giuseppe di Bartolo incrocio con Via Anastasio II",
+        "Via Anastasio II incrocio con Via di Valle Aurelia",
+        "Via di Valle Aurelia incrocio con Via Giuseppe Bonaccorsi",
+        "Via Giuseppe Bonaccorsi incrocio con Viale di Valle Aurelia"
       ]
     }
   }

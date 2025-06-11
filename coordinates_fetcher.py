@@ -1,6 +1,6 @@
 """
-coordinates_fetcher.py
-Recupera coordinate per vie/piazze/ da Overpass API 
+enhanced_coordinates_fetcher.py
+Enhanced version with intelligent parsing of location specifications
 """
 
 import json
@@ -8,8 +8,19 @@ import requests
 import time
 import re
 from typing import Dict, List, Tuple, Optional
+from dataclasses import dataclass
 
-class CoordinatesFetcher:
+@dataclass
+class LocationSpec:
+    """Parsed location specification"""
+    primary_street: str
+    specification_type: str  # 'civico', 'tratto', 'incrocio', 'simple'
+    specification: Optional[str]
+    query_targets: List[str]
+    display_info: str
+    original_text: str
+
+class EnhancedCoordinatesFetcher:
     def __init__(self):
         self.rome_bbox = {
             'south': 41.8,
@@ -42,6 +53,64 @@ class CoordinatesFetcher:
         
         self.overpass_url = "https://overpass-api.de/api/interpreter"
     
+    def parse_location_specification(self, location_string: str) -> LocationSpec:
+        """Parse location string into structured specification"""
+        
+        # Pattern 1: (fronte civico X)
+        civico_match = re.search(r'^(.+?)\s*\(fronte civico (\d+)\)$', location_string)
+        if civico_match:
+            primary = civico_match.group(1).strip()
+            civico_num = civico_match.group(2)
+            return LocationSpec(
+                primary_street=primary,
+                specification_type='civico',
+                specification=civico_num,
+                query_targets=[primary],
+                display_info=f"Near house number {civico_num}",
+                original_text=location_string
+            )
+        
+        # Pattern 2: tratto compreso tra A e B
+        tratto_match = re.search(r'^(.+?)\s+tratto compreso tra (.+?)$', location_string)
+        if tratto_match:
+            primary = tratto_match.group(1).strip()
+            endpoints_str = tratto_match.group(2)
+            endpoints = [ep.strip() for ep in endpoints_str.split(' e ')]
+            
+            return LocationSpec(
+                primary_street=primary,
+                specification_type='tratto',
+                specification=endpoints_str,
+                query_targets=[primary] + endpoints,
+                display_info=f"Section between {' and '.join(endpoints)}",
+                original_text=location_string
+            )
+        
+        # Pattern 3: incrocio con X
+        incrocio_match = re.search(r'^(.+?)\s+incrocio con (.+?)$', location_string)
+        if incrocio_match:
+            primary = incrocio_match.group(1).strip()
+            intersecting = incrocio_match.group(2).strip()
+            
+            return LocationSpec(
+                primary_street=primary,
+                specification_type='incrocio',
+                specification=intersecting,
+                query_targets=[primary, intersecting],
+                display_info=f"Intersection with {intersecting}",
+                original_text=location_string
+            )
+        
+        # Pattern 4: Simple street name (no specifications)
+        return LocationSpec(
+            primary_street=location_string.strip(),
+            specification_type='simple',
+            specification=None,
+            query_targets=[location_string.strip()],
+            display_info='Entire street/square',
+            original_text=location_string
+        )
+    
     def get_zone_bbox(self, zone_name: str) -> Dict:
         """Get bounding box for specific zone or default to Rome bbox"""
         zone_key = zone_name.lower().replace(' ', '_').replace('-', '_')
@@ -58,29 +127,6 @@ class CoordinatesFetcher:
         mapped_zone = zone_mappings.get(zone_key, zone_key)
         return self.zone_bboxes.get(mapped_zone, self.rome_bbox)
     
-    def extract_street_info(self, street_description: str) -> Tuple[str, Optional[str]]:
-        """Extract street name and specific location info (like civico numbers)"""
-        
-        # Handle specific location indicators
-        civico_match = re.search(r'\(fronte civico (\d+)\)', street_description)
-        tratto_match = re.search(r'tratto compreso tra (.+)', street_description)
-        incrocio_match = re.search(r'incrocio con (.+)', street_description)
-        
-        specific_info = None
-        clean_name = street_description
-        
-        if civico_match:
-            specific_info = f"near civico {civico_match.group(1)}"
-            clean_name = re.sub(r'\s*\(fronte civico \d+\)', '', street_description)
-        elif tratto_match:
-            specific_info = f"section between {tratto_match.group(1)}"
-            clean_name = re.sub(r'\s*tratto compreso tra .+', '', street_description)
-        elif incrocio_match:
-            specific_info = f"intersection with {incrocio_match.group(1)}"
-            clean_name = re.sub(r'\s*incrocio con .+', '', street_description)
-        
-        return clean_name.strip(), specific_info
-    
     def generate_name_variants(self, street_name: str) -> List[str]:
         """Generate different variants of street names to try"""
         variants = [street_name]  # Start with original name
@@ -88,7 +134,7 @@ class CoordinatesFetcher:
         # Extract street type prefix
         street_prefix = ""
         base_name = street_name
-        for prefix in ["Via ", "Piazza ", "Viale ", "Largo ", "Corso "]:
+        for prefix in ["Via ", "Piazza ", "Viale ", "Largo ", "Corso ", "Sottopasso "]:
             if base_name.startswith(prefix):
                 street_prefix = prefix
                 base_name = base_name[len(prefix):]
@@ -97,6 +143,7 @@ class CoordinatesFetcher:
         # Special hardcoded cases
         special_cases = {
             "La Marmora": ["La Marmora", "Lamarmora"],
+            "Sottopasso": ["Sottopasso", "Sottopassaggio"]
         }
         
         if base_name in special_cases:
@@ -255,43 +302,146 @@ class CoordinatesFetcher:
                         if all(w.lower() not in italian_stopwords for w in last_three):
                             variants.append(' '.join(last_three))
     
-    def query_street_coordinates(self, street_name: str, zone_name: str = None, specific_info: str = None) -> Optional[List[Tuple[float, float]]]:
-        """Query Overpass API for street coordinates with zone-specific search"""
+    def query_street_coordinates(self, street_name: str, zone_name: str = None) -> Optional[Dict]:
+        """Query coordinates for a location specification with enhanced parsing"""
+        
+        # Parse the location specification
+        location_spec = self.parse_location_specification(street_name)
         
         bbox = self.get_zone_bbox(zone_name) if zone_name else self.rome_bbox
         
-        # Extract clean name and handle specific location info
-        clean_name, extracted_info = self.extract_street_info(street_name)
-        if extracted_info:
-            specific_info = extracted_info
-        
-        # Generate variants to try
-        name_variants = self.generate_name_variants(clean_name)
-        
-        print(f"🔍 Querying: {street_name}")
+        print(f"🔍 Parsing: {street_name}")
+        print(f"   Type: {location_spec.specification_type}")
+        print(f"   Primary: {location_spec.primary_street}")
+        print(f"   Info: {location_spec.display_info}")
+        print(f"   Query targets: {location_spec.query_targets}")
         if zone_name:
             print(f"   Zone: {zone_name}")
-        if specific_info:
-            print(f"   Specific: {specific_info}")
-        print(f"   Trying variants: {name_variants}")
         
-        # Try each variant
-        for variant in name_variants:
-            coordinates = self._search_with_variant(variant, bbox)
-            if coordinates:
-                print(f"✅ Found {len(coordinates)} points with variant: '{variant}'")
-                
-                # If we have specific location info, try to filter results
-                if specific_info and "civico" in specific_info:
-                    # For now, return all coordinates - we could add more filtering logic here
-                    pass
-                
-                return coordinates
-            else:
-                print(f"   ❌ No results for variant: '{variant}'")
+        # Query coordinates for each target
+        all_coordinates = {}
+        for target in location_spec.query_targets:
+            name_variants = self.generate_name_variants(target)
+            
+            print(f"   🎯 Querying: {target}")
+            print(f"      Variants: {name_variants}")
+            
+            for variant in name_variants:
+                coordinates = self._search_with_variant(variant, bbox)
+                if coordinates:
+                    print(f"      ✅ Found {len(coordinates)} points with variant: '{variant}'")
+                    all_coordinates[target] = {
+                        'coordinates': coordinates,
+                        'found_variant': variant
+                    }
+                    break
+                else:
+                    print(f"      ❌ No results for variant: '{variant}'")
+            
+            if target not in all_coordinates:
+                print(f"   ❌ No coordinates found for: {target}")
         
-        print(f"❌ No coordinates found for any variant")
-        return None
+        # Process coordinates based on specification type
+        processed_result = self._process_coordinates_by_type(location_spec, all_coordinates)
+        
+        if processed_result:
+            print(f"✅ Successfully processed {location_spec.specification_type} specification")
+            return processed_result
+        else:
+            print(f"❌ No coordinates found for any target")
+            return None
+    
+    def _process_coordinates_by_type(self, location_spec: LocationSpec, all_coordinates: Dict) -> Optional[Dict]:
+        """Process coordinates based on the specification type"""
+        
+        if not all_coordinates:
+            return None
+        
+        result = {
+            'specification': location_spec.__dict__,
+            'coordinates': [],
+            'metadata': {
+                'type': location_spec.specification_type,
+                'display_info': location_spec.display_info,
+                'color': self._get_color_for_type(location_spec.specification_type),
+                'icon': self._get_icon_for_type(location_spec.specification_type)
+            }
+        }
+        
+        if location_spec.specification_type == 'simple':
+            # Simple case: just return the coordinates
+            primary_data = all_coordinates.get(location_spec.primary_street)
+            if primary_data:
+                result['coordinates'] = primary_data['coordinates']
+                result['metadata']['found_variant'] = primary_data['found_variant']
+        
+        elif location_spec.specification_type == 'civico':
+            # For civico: return primary street coordinates
+            # TODO: In the future, could filter by proximity to house number
+            primary_data = all_coordinates.get(location_spec.primary_street)
+            if primary_data:
+                result['coordinates'] = primary_data['coordinates']
+                result['metadata']['found_variant'] = primary_data['found_variant']
+                result['metadata']['note'] = f"Showing entire street (house number {location_spec.specification} not precisely located)"
+        
+        elif location_spec.specification_type == 'incrocio':
+            # For intersection: combine coordinates from both streets
+            primary_data = all_coordinates.get(location_spec.primary_street)
+            intersecting_data = all_coordinates.get(location_spec.specification)
+            
+            if primary_data:
+                result['coordinates'].extend([{'type': 'primary', 'coords': coord} for coord in primary_data['coordinates']])
+                result['metadata']['primary_variant'] = primary_data['found_variant']
+            
+            if intersecting_data:
+                result['coordinates'].extend([{'type': 'intersecting', 'coords': coord} for coord in intersecting_data['coordinates']])
+                result['metadata']['intersecting_variant'] = intersecting_data['found_variant']
+            
+            # TODO: In the future, could find actual intersection points
+            if primary_data or intersecting_data:
+                result['metadata']['note'] = "Showing both streets (intersection point not precisely calculated)"
+        
+        elif location_spec.specification_type == 'tratto':
+            # For section: combine primary street with endpoints
+            primary_data = all_coordinates.get(location_spec.primary_street)
+            if primary_data:
+                result['coordinates'].extend([{'type': 'primary', 'coords': coord} for coord in primary_data['coordinates']])
+                result['metadata']['primary_variant'] = primary_data['found_variant']
+            
+            # Add endpoints as reference points
+            endpoints = location_spec.specification.split(' e ')
+            for i, endpoint in enumerate(endpoints):
+                endpoint = endpoint.strip()
+                endpoint_data = all_coordinates.get(endpoint)
+                if endpoint_data:
+                    result['coordinates'].extend([{'type': f'endpoint_{i+1}', 'coords': coord} for coord in endpoint_data['coordinates']])
+                    result['metadata'][f'endpoint_{i+1}_variant'] = endpoint_data['found_variant']
+            
+            # TODO: In the future, could calculate the actual section between endpoints
+            if primary_data:
+                result['metadata']['note'] = f"Showing entire street with reference points ({location_spec.specification})"
+        
+        return result if result['coordinates'] else None
+    
+    def _get_color_for_type(self, spec_type: str) -> str:
+        """Get map color for specification type"""
+        colors = {
+            'simple': 'green',
+            'civico': 'blue', 
+            'incrocio': 'red',
+            'tratto': 'orange'
+        }
+        return colors.get(spec_type, 'gray')
+    
+    def _get_icon_for_type(self, spec_type: str) -> str:
+        """Get map icon for specification type"""
+        icons = {
+            'simple': '📍',
+            'civico': '🏠',
+            'incrocio': '✕',
+            'tratto': '🔗'
+        }
+        return icons.get(spec_type, '❓')
     
     def _search_with_variant(self, name_variant: str, bbox: Dict) -> Optional[List[Tuple[float, float]]]:
         """Search for a specific name variant"""
@@ -341,7 +491,7 @@ class CoordinatesFetcher:
             return None
     
     def fetch_all_coordinates(self, ordinances_file: str) -> Dict:
-        """Fetch coordinates for all streets in all ordinances."""
+        """Fetch coordinates for all streets in all ordinances with enhanced parsing."""
         
         # Load ordinances
         try:
@@ -360,6 +510,7 @@ class CoordinatesFetcher:
                 total_streets += len(streets)
         
         print(f"🏛️ Processing {total_streets} streets from {len(ordinances_data)} ordinances...")
+        print(f"🧠 Using enhanced parsing for location specifications...")
         
         current_street = 0
         
@@ -380,10 +531,10 @@ class CoordinatesFetcher:
                     current_street += 1
                     print(f"\n[{current_street}/{total_streets}] {street}")
                     
-                    coordinates = self.query_street_coordinates(street, zone_name)
+                    coordinates_result = self.query_street_coordinates(street, zone_name)
                     
-                    if coordinates:
-                        results[ord_id]['zones'][zone_name][street] = coordinates
+                    if coordinates_result:
+                        results[ord_id]['zones'][zone_name][street] = coordinates_result
                     else:
                         results[ord_id]['zones'][zone_name][street] = None
                     
@@ -392,41 +543,57 @@ class CoordinatesFetcher:
         
         return results
     
-    def save_coordinates(self, coordinates: Dict, output_file: str = "coordinates.json"):
-        """Save coordinates to JSON file."""
+    def save_coordinates(self, coordinates: Dict, output_file: str = "enhanced_coordinates.json"):
+        """Save enhanced coordinates to JSON file."""
         
         with open(output_file, "w", encoding="utf-8") as f:
             json.dump(coordinates, f, ensure_ascii=False, indent=2)
         
-        print(f"💾 Coordinates saved to {output_file}")
+        print(f"💾 Enhanced coordinates saved to {output_file}")
+        
+        # Print summary
+        total_found = 0
+        total_streets = 0
+        type_counts = {'simple': 0, 'civico': 0, 'incrocio': 0, 'tratto': 0}
+        
+        for ord_data in coordinates.values():
+            for zone_data in ord_data['zones'].values():
+                for street, result in zone_data.items():
+                    total_streets += 1
+                    if result:
+                        total_found += 1
+                        spec_type = result.get('specification', {}).get('specification_type', 'unknown')
+                        if spec_type in type_counts:
+                            type_counts[spec_type] += 1
+        
+        print(f"\n📊 Enhanced Processing Summary:")
+        print(f"   Total streets: {total_streets}")
+        print(f"   Coordinates found: {total_found}")
+        print(f"   Success rate: {total_found/total_streets*100:.1f}%")
+        print(f"\n📋 Specification Types:")
+        for spec_type, count in type_counts.items():
+            if count > 0:
+                icon = self._get_icon_for_type(spec_type)
+                color = self._get_color_for_type(spec_type)
+                print(f"   {icon} {spec_type}: {count} ({color})")
 
 def main():
-    """Main function to fetch coordinates."""
+    """Main function to fetch enhanced coordinates."""
     
-    fetcher = CoordinatesFetcher()
+    fetcher = EnhancedCoordinatesFetcher()
     
-    # Fetch all coordinates
-    coordinates = fetcher.fetch_all_coordinates("ordinanze/ordinanze.json")
+    # Fetch all coordinates with enhanced parsing
+    coordinates = fetcher.fetch_all_coordinates("ordinanze.json")
     
     if coordinates:
         # Save to file
         fetcher.save_coordinates(coordinates)
         
-        # Print summary
-        total_found = 0
-        total_streets = 0
-        
-        for ord_data in coordinates.values():
-            for zone_data in ord_data['zones'].values():
-                for street, coords in zone_data.items():
-                    total_streets += 1
-                    if coords:
-                        total_found += 1
-        
-        print(f"\n📊 Summary:")
-        print(f"   Total streets: {total_streets}")
-        print(f"   Coordinates found: {total_found}")
-        print(f"   Success rate: {total_found/total_streets*100:.1f}%")
+        print(f"\n🎯 Next steps:")
+        print(f"   1. Update your HTML viewer to handle the new coordinate format")
+        print(f"   2. Use the 'metadata' field for proper visualization")
+        print(f"   3. Show different colors/icons based on specification type")
+        print(f"   4. Display the 'display_info' for user-friendly descriptions")
     
     return coordinates
 

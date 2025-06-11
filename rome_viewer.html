@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>zonerosse</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+        
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+        
+        .sidebar {
+            width: 350px;
+            background: #f8f9fa;
+            border-right: 1px solid #dee2e6;
+            overflow-y: auto;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        
+        .map-container {
+            flex: 1;
+            position: relative;
+        }
+        
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        
+        h1 {
+            font-size: 20px;
+            margin: 0 0 20px 0;
+            color: #333;
+        }
+        
+        /* ORDINANCE LEVEL */
+        .ordinance {
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: white;
+        }
+        
+        .ordinance-header {
+            padding: 15px;
+            cursor: pointer;
+            background: #f8f9fa;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .ordinance-header:hover {
+            background: #e9ecef;
+        }
+        
+        .ordinance-info {
+            flex: 1;
+        }
+        
+        .ordinance-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 4px;
+        }
+        
+        .ordinance-date {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .ordinance-content {
+            display: none;
+            padding: 15px;
+        }
+        
+        /* ZONE LEVEL */
+        .zone {
+            margin: 10px 0;
+            border: 1px solid #e9ecef;
+            border-radius: 3px;
+            background: #f8f9fa;
+        }
+        
+        .zone-header {
+            padding: 12px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .zone-header:hover {
+            background: #e3f2fd;
+        }
+        
+        .zone-info {
+            flex: 1;
+        }
+        
+        .zone-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: #495057;
+            margin-bottom: 4px;
+        }
+        
+        .zone-count {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .zone-content {
+            display: none;
+            padding: 12px;
+        }
+        
+        /* STREET LEVEL */
+        .street {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            padding: 8px;
+            border-radius: 3px;
+            margin: 2px 0;
+            transition: background-color 0.2s;
+        }
+        
+        .street:hover {
+            background: rgba(227, 242, 253, 0.5);
+        }
+        
+        .street.found {
+            background-color: #d4edda;
+        }
+        
+        .street.not-found {
+            background-color: #f8d7da;
+        }
+        
+        .street-content {
+            flex: 1;
+            cursor: pointer;
+        }
+        
+        .street-name {
+            font-size: 13px;
+            font-weight: 500;
+            color: #333;
+            line-height: 1.3;
+            margin-bottom: 2px;
+        }
+        
+        .street-info {
+            font-size: 11px;
+            color: #666;
+            font-style: italic;
+        }
+        
+        /* BUTTONS */
+        .btn-eye {
+            padding: 6px 10px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            background: white;
+            cursor: pointer;
+            font-size: 14px;
+            color: #495057;
+            margin-left: 10px;
+            min-width: 32px;
+            height: 32px;
+        }
+        
+        .btn-eye:hover {
+            background: #e9ecef;
+        }
+        
+        .btn-eye.active {
+            background: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+        
+        .btn-street {
+            padding: 4px 8px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            background: white;
+            cursor: pointer;
+            font-size: 12px;
+            min-width: 28px;
+            height: 24px;
+        }
+        
+        .btn-street:hover {
+            background: #e9ecef;
+        }
+        
+        .btn-street.active {
+            background: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+        
+        .popup-content h4 {
+            margin: 0 0 8px 0;
+            color: #333;
+        }
+        
+        .popup-content p {
+            margin: 4px 0;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h1>Ordinanze romane</h1>
+            <div id="interface">
+                <div class="loading">Caricamento coordinate...</div>
+            </div>
+        </div>
+        <div class="map-container">
+            <div id="map"></div>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" 
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <script>
+        // Global variables
+        let map;
+        let coordinatesData = {};
+        let currentLayers = {};
+
+        // Initialize map
+        function initMap() {
+            map = L.map('map').setView([41.9028, 12.4964], 11); // Rome center
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+            
+            console.log('🗺️ Map initialized');
+        }
+
+        // Load coordinates
+        async function loadCoordinates() {
+            try {
+                coordinatesData = await fetch('./coordinates.json').then(response => response.json());
+                generateInterface();
+                console.log('✅ Coordinate caricate con successo');
+            } catch (error) {
+                console.error('❌ Errore nel caricamento delle coordinate:', error);
+                document.getElementById('interface').innerHTML = '<div class="loading">Errore nel caricamento delle coordinate</div>';
+            }
+        }
+
+        // Generate the interface - SIMPLE AND CLEAN
+        function generateInterface() {
+            const interfaceContainer = document.getElementById('interface');
+            if (!interfaceContainer) {
+                console.error('Interface container not found');
+                return;
+            }
+            
+            let html = '';
+            
+            // STEP 1: Create ordinances (only headers visible)
+            Object.entries(coordinatesData).forEach(([ordId, ordData]) => {
+                const metadata = ordData.metadata || {};
+                const zoneCount = Object.keys(ordData.zones).length;
+                
+                html += `<div class="ordinance">`;
+                
+                // Ordinance header (clickable)
+                html += `<div class="ordinance-header" onclick="toggleOrdinance('${ordId}')">`;
+                html += `<div class="ordinance-info">`;
+                html += `<div class="ordinance-title">📋 Ordinanza ${metadata.protocol || ordId}</div>`;
+                html += `<div class="ordinance-date">${metadata.date || 'Data sconosciuta'} • ${zoneCount} zone</div>`;
+                html += `</div>`;
+                html += `<button class="btn-eye" onclick="event.stopPropagation(); toggleOrdinanceEye('${ordId}')">👁️</button>`;
+                html += `</div>`;
+                
+                // Ordinance content (hidden)
+                html += `<div class="ordinance-content" id="ord-${ordId}">`;
+                
+                // STEP 2: Create zones within ordinance
+                Object.entries(ordData.zones).forEach(([zoneName, streets]) => {
+                    const streetCount = Object.keys(streets).length;
+                    const foundCount = Object.values(streets).filter(s => s !== null).length;
+                    const zoneId = `${ordId}_${zoneName}`.replace(/[^a-zA-Z0-9_]/g, '_');
+                    
+                    html += `<div class="zone">`;
+                    
+                    // Zone header (clickable)
+                    html += `<div class="zone-header" onclick="toggleZone('${ordId}', '${zoneName}')">`;
+                    html += `<div class="zone-info">`;
+                    html += `<div class="zone-title">📍 ${zoneName}</div>`;
+                    html += `<div class="zone-count">${foundCount}/${streetCount} strade trovate</div>`;
+                    html += `</div>`;
+                    html += `<button class="btn-eye" onclick="event.stopPropagation(); toggleZoneEye('${ordId}', '${zoneName}')">👁️</button>`;
+                    html += `</div>`;
+                    
+                    // Zone content (hidden)
+                    html += `<div class="zone-content" id="zone-${zoneId}">`;
+                    
+                    // STEP 3: Create streets within zone
+                    Object.entries(streets).forEach(([streetName, streetData]) => {
+                        const hasCoords = streetData !== null;
+                        let coordInfo = '';
+                        
+                        if (hasCoords) {
+                            if (Array.isArray(streetData)) {
+                                coordInfo = `${streetData.length} punti`;
+                            } else if (streetData.coordinates) {
+                                const count = streetData.coordinates.length;
+                                const type = streetData.metadata?.display_info || '';
+                                coordInfo = `${count} punti${type ? ' - ' + type : ''}`;
+                            }
+                        }
+                        
+                        const statusClass = hasCoords ? 'found' : 'not-found';
+                        
+                        html += `<div class="street ${statusClass}">`;
+                        html += `<div class="street-content" onclick="focusStreet('${ordId}', '${zoneName}', \`${streetName.replace(/`/g, '\\`')}\`)">`;
+                        html += `<div class="street-name">${streetName}</div>`;
+                        if (hasCoords) {
+                            html += `<div class="street-info">${coordInfo}</div>`;
+                        }
+                        html += `</div>`;
+                        if (hasCoords) {
+                            html += `<button class="btn-street" onclick="toggleStreetEye('${ordId}', '${zoneName}', \`${streetName.replace(/`/g, '\\`')}\`)">👁️</button>`;
+                        }
+                        html += `</div>`;
+                    });
+                    
+                    html += `</div>`; // Close zone-content
+                    html += `</div>`; // Close zone
+                });
+                
+                html += `</div>`; // Close ordinance-content
+                html += `</div>`; // Close ordinance
+            });
+            
+            interfaceContainer.innerHTML = html;
+            console.log('Interface generated - only ordinance headers visible');
+        }
+
+        // Toggle ordinance visibility
+        function toggleOrdinance(ordId) {
+            const content = document.getElementById(`ord-${ordId}`);
+            if (content) {
+                const isVisible = content.style.display === 'block';
+                content.style.display = isVisible ? 'none' : 'block';
+                console.log(`Ordinance ${ordId}: ${isVisible ? 'closed' : 'opened'}`);
+            }
+        }
+
+        // Toggle zone visibility  
+        function toggleZone(ordId, zoneName) {
+            const zoneId = `${ordId}_${zoneName}`.replace(/[^a-zA-Z0-9_]/g, '_');
+            const content = document.getElementById(`zone-${zoneId}`);
+            if (content) {
+                const isVisible = content.style.display === 'block';
+                content.style.display = isVisible ? 'none' : 'block';
+                console.log(`Zone ${zoneName}: ${isVisible ? 'closed' : 'opened'}`);
+            }
+        }
+
+        // ORDINANCE EYE: Show/hide all streets in ordinance
+        function toggleOrdinanceEye(ordId) {
+            const ordData = coordinatesData[ordId];
+            if (!ordData) return;
+            
+            // Check if any streets in this ordinance are visible
+            let hasVisibleStreets = false;
+            Object.entries(ordData.zones).forEach(([zoneName, streets]) => {
+                Object.keys(streets).forEach(streetName => {
+                    const layerId = `street-${ordId}-${zoneName}-${streetName}`;
+                    if (currentLayers[layerId]) {
+                        hasVisibleStreets = true;
+                    }
+                });
+            });
+            
+            if (hasVisibleStreets) {
+                // Hide all streets in ordinance
+                hideAllOrdinanceStreets(ordId);
+                updateOrdinanceEyeButton(ordId, false);
+            } else {
+                // Show all streets in ordinance
+                showAllOrdinanceStreets(ordId);
+                updateOrdinanceEyeButton(ordId, true);
+            }
+        }
+
+        // ZONE EYE: Show/hide all streets in zone (deactivates ordinance eye)
+        function toggleZoneEye(ordId, zoneName) {
+            const ordData = coordinatesData[ordId];
+            if (!ordData || !ordData.zones[zoneName]) return;
+            
+            // Check if any streets in this zone are visible
+            let hasVisibleStreets = false;
+            Object.keys(ordData.zones[zoneName]).forEach(streetName => {
+                const layerId = `street-${ordId}-${zoneName}-${streetName}`;
+                if (currentLayers[layerId]) {
+                    hasVisibleStreets = true;
+                }
+            });
+            
+            if (hasVisibleStreets) {
+                // Hide all streets in zone
+                hideAllZoneStreets(ordId, zoneName);
+                updateZoneEyeButton(ordId, zoneName, false);
+            } else {
+                // First deactivate ordinance eye (since we're showing partial)
+                updateOrdinanceEyeButton(ordId, false);
+                
+                // Show all streets in zone
+                showAllZoneStreets(ordId, zoneName);
+                updateZoneEyeButton(ordId, zoneName, true);
+            }
+        }
+
+        // STREET EYE: Show/hide individual street (deactivates zone and ordinance eyes)
+        function toggleStreetEye(ordId, zoneName, streetName) {
+            const layerId = `street-${ordId}-${zoneName}-${streetName}`;
+            
+            if (currentLayers[layerId]) {
+                // Hide this street
+                hideStreet(ordId, zoneName, streetName);
+                updateStreetEyeButton(ordId, zoneName, streetName, false);
+            } else {
+                // First deactivate higher level eyes (since we're showing partial)
+                updateOrdinanceEyeButton(ordId, false);
+                updateZoneEyeButton(ordId, zoneName, false);
+                
+                // Show this street
+                showStreet(ordId, zoneName, streetName);
+                updateStreetEyeButton(ordId, zoneName, streetName, true);
+            }
+        }
+
+        // Helper functions for showing/hiding streets
+        function showAllOrdinanceStreets(ordId) {
+            const ordData = coordinatesData[ordId];
+            Object.entries(ordData.zones).forEach(([zoneName, streets]) => {
+                Object.entries(streets).forEach(([streetName, streetData]) => {
+                    if (streetData) {
+                        showStreet(ordId, zoneName, streetName);
+                        updateStreetEyeButton(ordId, zoneName, streetName, true);
+                    }
+                });
+                updateZoneEyeButton(ordId, zoneName, true);
+            });
+        }
+
+        function hideAllOrdinanceStreets(ordId) {
+            const ordData = coordinatesData[ordId];
+            Object.entries(ordData.zones).forEach(([zoneName, streets]) => {
+                Object.keys(streets).forEach(streetName => {
+                    hideStreet(ordId, zoneName, streetName);
+                    updateStreetEyeButton(ordId, zoneName, streetName, false);
+                });
+                updateZoneEyeButton(ordId, zoneName, false);
+            });
+        }
+
+        function showAllZoneStreets(ordId, zoneName) {
+            const streets = coordinatesData[ordId]?.zones[zoneName];
+            if (streets) {
+                Object.entries(streets).forEach(([streetName, streetData]) => {
+                    if (streetData) {
+                        showStreet(ordId, zoneName, streetName);
+                        updateStreetEyeButton(ordId, zoneName, streetName, true);
+                    }
+                });
+            }
+        }
+
+        function hideAllZoneStreets(ordId, zoneName) {
+            const streets = coordinatesData[ordId]?.zones[zoneName];
+            if (streets) {
+                Object.keys(streets).forEach(streetName => {
+                    hideStreet(ordId, zoneName, streetName);
+                    updateStreetEyeButton(ordId, zoneName, streetName, false);
+                });
+            }
+        }
+
+        function showStreet(ordId, zoneName, streetName) {
+            const streetData = coordinatesData[ordId]?.zones[zoneName]?.[streetName];
+            if (!streetData) return;
+            
+            const layerId = `street-${ordId}-${zoneName}-${streetName}`;
+            
+            // Create red dots for this street
+            const streetLayer = createStreetLayer(streetName, streetData);
+            if (streetLayer) {
+                streetLayer.addTo(map);
+                currentLayers[layerId] = streetLayer;
+            }
+        }
+
+        function hideStreet(ordId, zoneName, streetName) {
+            const layerId = `street-${ordId}-${zoneName}-${streetName}`;
+            if (currentLayers[layerId]) {
+                map.removeLayer(currentLayers[layerId]);
+                delete currentLayers[layerId];
+            }
+        }
+
+        // Create layer for a street (red dots)
+        function createStreetLayer(streetName, streetData) {
+            const layerGroup = L.layerGroup();
+            
+            let coordinates = [];
+            if (Array.isArray(streetData)) {
+                coordinates = streetData;
+            } else if (streetData.coordinates) {
+                streetData.coordinates.forEach(coordItem => {
+                    if (coordItem.coords) {
+                        coordinates.push(coordItem.coords);
+                    } else if (Array.isArray(coordItem)) {
+                        coordinates.push(coordItem);
+                    }
+                });
+            }
+            
+            coordinates.forEach(coord => {
+                if (!coord || coord.length !== 2) return;
+                
+                const [lat, lon] = coord;
+                const marker = L.circleMarker([lat, lon], {
+                    color: '#dc3545',
+                    fillColor: '#dc3545',
+                    fillOpacity: 0.8,
+                    radius: 5,
+                    weight: 2
+                });
+                
+                marker.bindPopup(`<div class="popup-content"><h4>🔴 ${streetName}</h4></div>`);
+                layerGroup.addLayer(marker);
+            });
+            
+            return layerGroup.getLayers().length > 0 ? layerGroup : null;
+        }
+
+        // Update button appearances
+        function updateOrdinanceEyeButton(ordId, isActive) {
+            const button = document.querySelector(`button[onclick*="toggleOrdinanceEye('${ordId}')"]`);
+            if (button) {
+                if (isActive) {
+                    button.classList.add('active');
+                } else {
+                    button.classList.remove('active');
+                }
+            }
+        }
+
+        function updateZoneEyeButton(ordId, zoneName, isActive) {
+            const button = document.querySelector(`button[onclick*="toggleZoneEye('${ordId}', '${zoneName}')"]`);
+            if (button) {
+                if (isActive) {
+                    button.classList.add('active');
+                } else {
+                    button.classList.remove('active');
+                }
+            }
+        }
+
+        function updateStreetEyeButton(ordId, zoneName, streetName, isActive) {
+            const buttons = document.querySelectorAll(`button[onclick*="toggleStreetEye('${ordId}', '${zoneName}', \`${streetName.replace(/`/g, '\\`')}\`)"]`);
+            buttons.forEach(button => {
+                if (isActive) {
+                    button.classList.add('active');
+                } else {
+                    button.classList.remove('active');
+                }
+            });
+        }
+
+        // Focus on street
+        function focusStreet(ordId, zoneName, streetName) {
+            const streetData = coordinatesData[ordId]?.zones[zoneName]?.[streetName];
+            if (!streetData) {
+                alert('Nessuna coordinata disponibile per questa strada');
+                return;
+            }
+            
+            // Ensure this street is visible
+            const layerId = `street-${ordId}-${zoneName}-${streetName}`;
+            if (!currentLayers[layerId]) {
+                showStreet(ordId, zoneName, streetName);
+                updateStreetEyeButton(ordId, zoneName, streetName, true);
+                // Deactivate higher level eyes
+                updateOrdinanceEyeButton(ordId, false);
+                updateZoneEyeButton(ordId, zoneName, false);
+            }
+            
+            // Focus on coordinates
+            let coordinates = [];
+            if (Array.isArray(streetData)) {
+                coordinates = streetData;
+            } else if (streetData.coordinates) {
+                streetData.coordinates.forEach(coordItem => {
+                    if (coordItem.coords) {
+                        coordinates.push(coordItem.coords);
+                    } else if (Array.isArray(coordItem)) {
+                        coordinates.push(coordItem);
+                    }
+                });
+            }
+            
+            if (coordinates.length === 1) {
+                map.setView(coordinates[0], 17);
+            } else if (coordinates.length > 1) {
+                const bounds = L.latLngBounds(coordinates);
+                map.fitBounds(bounds, { padding: [30, 30] });
+            }
+        }
+
+        // Initialize everything when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            initMap();
+            loadCoordinates();
+            console.log('🗺️ Visualizzatore caricato');
+        });
+    </script>
+</body>
+</html>
