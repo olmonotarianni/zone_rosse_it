@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rome Ordinances Viewer with Bounding Boxes</title>
+    <title>Zone rosse romane</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
     <style>
         body {
@@ -165,18 +165,18 @@
 </head>
 <body>
     <div class="sidebar">
-        <h2>🗺️ Rome Ordinances</h2>
+        <h2>Ordinanze romane</h2>
         
         <!-- Bounding Box Controls -->
         <div class="bbox-controls">
-            <h3>📍 Search Zone Boundaries</h3>
+            <h3>📍 Visualizza BBox per zone</h3>
             <div id="bbox-controls">
                 <!-- Will be populated by JavaScript -->
             </div>
         </div>
         
         <!-- Ordinances List -->
-        <h3>🏛️ Ordinances</h3>
+        <h3>🏛️ Ordinanze</h3>
         <div id="ordinances-container">
             <div class="loading">Loading coordinates...</div>
         </div>
@@ -413,7 +413,7 @@
                     html += `
                         <div class="zone" onclick="toggleZone('${ordId}', ${zoneIndex})">
                             <strong>📍 ${zoneName}</strong><br>
-                            <small>${coordsCount}/${streetCount} streets with coordinates</small>
+                            <small>${coordsCount}/${streetCount} luoghi trovati</small>
                         </div>
                         <div id="streets-${ordId}-${zoneIndex}" class="hidden">
                     `;
@@ -481,7 +481,7 @@
         initMap();
         loadCoordinates();
         
-        console.log('🗺️ Rome Ordinances Viewer with Bounding Boxes loaded');
+        console.log('🗺️ Viewer loaded');
     </script>
 </body>
 </html>
