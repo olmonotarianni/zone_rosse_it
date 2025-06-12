@@ -1,5 +1,5 @@
 """
-embed_coordinates.py
+embed_conates.py
 Embed coordinates with calculated intersection points and preserve data structure
 """
 
