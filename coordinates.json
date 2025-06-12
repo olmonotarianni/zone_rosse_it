@@ -1,9 +1,9 @@
 {
-  "ordinance_6747": {
+  "ordinanza_6747": {
     "metadata": {
       "protocol": "6747",
       "date": "2025-01-08",
-      "title": "Prima ordinanza prefettizia"
+      "title": "Ordinanza prefettizia"
     },
     "zones": {
       "Zona Esquilino": {
@@ -9177,11 +9177,11 @@
       }
     }
   },
-  "ordinance_133331": {
+  "ordinanza_133331": {
     "metadata": {
       "protocol": "133331",
       "date": "2025-03-26",
-      "title": "Seconda ordinanza prefettizia"
+      "title": "Ordinanza prefettizia"
     },
     "zones": {
       "Zona Stazione Termini - Esquilino": {
@@ -20388,7 +20388,7 @@
         }
       },
       "Assi viari inclusi nel perimetro Zona Valle Aurelia": {
-        "Viale di Valle Aurelia << con Via Ettore Stampini": {
+        "Viale di Valle Aurelia incrocio con Via Ettore Stampini": {
           "specification": {
             "primary_street": "Viale di Valle Aurelia",
             "specification_type": "incrocio",

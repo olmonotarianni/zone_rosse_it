@@ -143,7 +143,8 @@ class CoordinatesFetcher:
         # Special hardcoded cases
         special_cases = {
             "La Marmora": ["La Marmora", "Lamarmora"],
-            "Sottopasso": ["Sottopasso", "Sottopassaggio"]
+            "Sottopasso": ["Sottopasso", "Sottopassaggio"],
+            "Sottopasso Pettinelli": ["Sottopasso Turbigo"],
         }
         
         if base_name in special_cases:

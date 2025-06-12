@@ -3,12 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>zonerosse</title>
-    
-    <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
-          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-    
+    <title>Zone Rosse</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body {
             margin: 0;
@@ -16,644 +12,728 @@
             font-family: Arial, sans-serif;
         }
         
-        .container {
-            display: flex;
+        #map {
             height: 100vh;
+            width: 100%;
         }
         
         .sidebar {
+            position: absolute;
+            top: 10px;
+            right: 10px;
             width: 350px;
-            background: #f8f9fa;
-            border-right: 1px solid #dee2e6;
+            max-height: calc(100vh - 20px);
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            z-index: 1000;
             overflow-y: auto;
-            padding: 20px;
-            box-sizing: border-box;
         }
         
-        .map-container {
-            flex: 1;
-            position: relative;
+        .sidebar-header {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            background: #f8f9fa;
+            border-radius: 8px 8px 0 0;
         }
         
-        #map {
-            width: 100%;
-            height: 100%;
+        .sidebar-content {
+            padding: 10px;
+            max-height: 400px;
+            overflow-y: auto;
         }
         
-        .loading {
-            text-align: center;
-            padding: 20px;
-            color: #666;
-        }
-        
-        h1 {
-            font-size: 20px;
-            margin: 0 0 20px 0;
-            color: #333;
-        }
-        
-        /* ORDINANCE LEVEL */
         .ordinance {
-            margin: 10px 0;
+            margin-bottom: 10px;
             border: 1px solid #ddd;
             border-radius: 4px;
-            background: white;
         }
         
         .ordinance-header {
-            padding: 15px;
-            cursor: pointer;
-            background: #f8f9fa;
-            border-radius: 4px;
-            transition: background-color 0.2s;
+            background: #f0f0f0;
+            padding: 8px;
+            border-radius: 4px 4px 0 0;
+            font-weight: bold;
+            font-size: 14px;
             display: flex;
-            align-items: center;
             justify-content: space-between;
+            align-items: center;
         }
         
         .ordinance-header:hover {
-            background: #e9ecef;
-        }
-        
-        .ordinance-info {
-            flex: 1;
+            background: #e0e0e0;
         }
         
         .ordinance-title {
-            font-size: 16px;
-            font-weight: bold;
-            color: #333;
-            margin-bottom: 4px;
-        }
-        
-        .ordinance-date {
-            font-size: 12px;
-            color: #666;
+            cursor: pointer;
+            flex-grow: 1;
         }
         
         .ordinance-content {
             display: none;
-            padding: 15px;
         }
         
-        /* ZONE LEVEL */
         .zone {
-            margin: 10px 0;
-            border: 1px solid #e9ecef;
-            border-radius: 3px;
-            background: #f8f9fa;
+            border-top: 1px solid #eee;
+            margin: 0;
         }
         
         .zone-header {
-            padding: 12px;
-            cursor: pointer;
-            transition: background-color 0.2s;
-            border-radius: 3px;
+            background: #f8f8f8;
+            padding: 6px 12px;
+            font-weight: 500;
+            font-size: 13px;
             display: flex;
-            align-items: center;
             justify-content: space-between;
+            align-items: center;
         }
         
         .zone-header:hover {
-            background: #e3f2fd;
-        }
-        
-        .zone-info {
-            flex: 1;
+            background: #eeeeee;
         }
         
         .zone-title {
-            font-size: 14px;
-            font-weight: bold;
-            color: #495057;
-            margin-bottom: 4px;
-        }
-        
-        .zone-count {
-            font-size: 12px;
-            color: #666;
+            cursor: pointer;
+            flex-grow: 1;
         }
         
         .zone-content {
             display: none;
-            padding: 12px;
+            padding: 5px 0;
         }
         
-        /* STREET LEVEL */
-        .street {
+        .street-item {
+            padding: 4px 20px;
+            font-size: 12px;
+            border-left: 3px solid transparent;
             display: flex;
-            align-items: flex-start;
-            gap: 8px;
-            padding: 8px;
-            border-radius: 3px;
-            margin: 2px 0;
-            transition: background-color 0.2s;
+            justify-content: space-between;
+            align-items: center;
         }
         
-        .street:hover {
-            background: rgba(227, 242, 253, 0.5);
-        }
-        
-        .street.found {
-            background-color: #d4edda;
-        }
-        
-        .street.not-found {
-            background-color: #f8d7da;
-        }
-        
-        .street-content {
-            flex: 1;
-            cursor: pointer;
+        .street-item:hover {
+            background: #f0f0f0;
         }
         
         .street-name {
-            font-size: 13px;
-            font-weight: 500;
-            color: #333;
-            line-height: 1.3;
-            margin-bottom: 2px;
-        }
-        
-        .street-info {
-            font-size: 11px;
-            color: #666;
-            font-style: italic;
-        }
-        
-        /* BUTTONS */
-        .btn-eye {
-            padding: 6px 10px;
-            border: 1px solid #ccc;
-            border-radius: 3px;
-            background: white;
             cursor: pointer;
-            font-size: 14px;
-            color: #495057;
-            margin-left: 10px;
-            min-width: 32px;
-            height: 32px;
+            flex-grow: 1;
         }
         
-        .btn-eye:hover {
-            background: #e9ecef;
+        .street-item.has-coords {
+            border-left-color: #ff0000;
         }
         
-        .btn-eye.active {
-            background: #007bff;
-            color: white;
-            border-color: #007bff;
+        .street-item.intersection {
+            border-left-color: #ff6600;
+            font-weight: 500;
         }
         
-        .btn-street {
-            padding: 4px 8px;
-            border: 1px solid #ccc;
-            border-radius: 3px;
+        .street-item.no-coords {
+            color: #999;
+            border-left-color: #ccc;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 5px;
+            margin-top: 10px;
+        }
+        
+        .btn {
+            padding: 5px 10px;
+            border: 1px solid #ddd;
             background: white;
+            border-radius: 3px;
             cursor: pointer;
             font-size: 12px;
-            min-width: 28px;
-            height: 24px;
         }
         
-        .btn-street:hover {
-            background: #e9ecef;
+        .btn:hover {
+            background: #f0f0f0;
         }
         
-        .btn-street.active {
-            background: #007bff;
+        .toggle-btn {
+            padding: 2px 6px;
+            border: 1px solid #ccc;
+            background: white;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 10px;
+            margin-left: 5px;
+            min-width: 18px;
+            height: 18px;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .toggle-btn:hover {
+            background: #f0f0f0;
+        }
+        
+        .toggle-btn.active {
+            background: #ff4444;
             color: white;
-            border-color: #007bff;
+            border-color: #ff4444;
         }
         
-        .popup-content h4 {
-            margin: 0 0 8px 0;
-            color: #333;
-        }
-        
-        .popup-content p {
-            margin: 4px 0;
-            font-size: 13px;
+        .stats {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            font-size: 12px;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="sidebar">
-            <h1>Ordinanze romane</h1>
-            <div id="interface">
-                <div class="loading">Caricamento coordinate...</div>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="toggleSidebar()">
+                <h3 style="margin: 0;">Zone rosse per ordinanza</h3>
+                <span id="sidebar-toggle">▼</span>
+            </div>
+            <div class="controls" id="sidebar-controls">
+                <button class="btn" onclick="toggleAllOrdinances()">Mostra tutte</button>
+                <button class="btn" onclick="fitToVisible()">spiega-mappa</button>
             </div>
         </div>
-        <div class="map-container">
-            <div id="map"></div>
+        <div class="sidebar-content" id="sidebar-content">
+            <div id="ordinances-list"></div>
+            <div class="stats" id="stats"></div>
         </div>
     </div>
+    
+    <div id="map"></div>
 
-    <!-- Leaflet JS -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" 
-            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // Global variables
-        let map;
+        const map = L.map('map').setView([41.9028, 12.4964], 12);
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
         let coordinatesData = {};
-        let currentLayers = {};
+        let allMarkers = [];
+        let visibleMarkers = [];
+        let ordinanceGroups = {};
+        let streetMarkers = {}; // New: track markers by street
 
-        // Initialize map
-        function initMap() {
-            map = L.map('map').setView([41.9028, 12.4964], 11); // Rome center
-            
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap contributors'
-            }).addTo(map);
-            
-            console.log('🗺️ Map initialized');
+        // Load coordinates data
+        coordinatesData = await fetch('./coordinates.json').then(response => response.json());
+
+        function isValidCoordinate(coords) {
+            if (!coords || coords.length !== 2) return false;
+            const [lat, lon] = coords;
+            return lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180 && lat !== 0 && lon !== 0;
         }
 
-        // Load coordinates
-        async function loadCoordinates() {
-            try {
-                coordinatesData = await fetch('./coordinates.json').then(response => response.json());
-                generateInterface();
-                console.log('✅ Coordinate caricate con successo');
-            } catch (error) {
-                console.error('❌ Errore nel caricamento delle coordinate:', error);
-                document.getElementById('interface').innerHTML = '<div class="loading">Errore nel caricamento delle coordinate</div>';
+        function createMarker(coords, metadata, streetName, ordId, zoneName) {
+            if (!isValidCoordinate(coords)) {
+                return null;
             }
-        }
 
-        // Generate the interface - SIMPLE AND CLEAN
-        function generateInterface() {
-            const interfaceContainer = document.getElementById('interface');
-            if (!interfaceContainer) {
-                console.error('Interface container not found');
-                return;
-            }
+            const isIntersection = metadata.type === 'incrocio' && metadata.has_calculated_intersection;
             
-            let html = '';
-            
-            // STEP 1: Create ordinances (only headers visible)
-            Object.entries(coordinatesData).forEach(([ordId, ordData]) => {
-                const metadata = ordData.metadata || {};
-                const zoneCount = Object.keys(ordData.zones).length;
-                
-                html += `<div class="ordinance">`;
-                
-                // Ordinance header (clickable)
-                html += `<div class="ordinance-header" onclick="toggleOrdinance('${ordId}')">`;
-                html += `<div class="ordinance-info">`;
-                html += `<div class="ordinance-title">📋 Ordinanza ${metadata.protocol || ordId}</div>`;
-                html += `<div class="ordinance-date">${metadata.date || 'Data sconosciuta'} • ${zoneCount} zone</div>`;
-                html += `</div>`;
-                html += `<button class="btn-eye" onclick="event.stopPropagation(); toggleOrdinanceEye('${ordId}')">👁️</button>`;
-                html += `</div>`;
-                
-                // Ordinance content (hidden)
-                html += `<div class="ordinance-content" id="ord-${ordId}">`;
-                
-                // STEP 2: Create zones within ordinance
-                Object.entries(ordData.zones).forEach(([zoneName, streets]) => {
-                    const streetCount = Object.keys(streets).length;
-                    const foundCount = Object.values(streets).filter(s => s !== null).length;
-                    const zoneId = `${ordId}_${zoneName}`.replace(/[^a-zA-Z0-9_]/g, '_');
-                    
-                    html += `<div class="zone">`;
-                    
-                    // Zone header (clickable)
-                    html += `<div class="zone-header" onclick="toggleZone('${ordId}', '${zoneName}')">`;
-                    html += `<div class="zone-info">`;
-                    html += `<div class="zone-title">📍 ${zoneName}</div>`;
-                    html += `<div class="zone-count">${foundCount}/${streetCount} strade trovate</div>`;
-                    html += `</div>`;
-                    html += `<button class="btn-eye" onclick="event.stopPropagation(); toggleZoneEye('${ordId}', '${zoneName}')">👁️</button>`;
-                    html += `</div>`;
-                    
-                    // Zone content (hidden)
-                    html += `<div class="zone-content" id="zone-${zoneId}">`;
-                    
-                    // STEP 3: Create streets within zone
-                    Object.entries(streets).forEach(([streetName, streetData]) => {
-                        const hasCoords = streetData !== null;
-                        let coordInfo = '';
-                        
-                        if (hasCoords) {
-                            if (Array.isArray(streetData)) {
-                                coordInfo = `${streetData.length} punti`;
-                            } else if (streetData.coordinates) {
-                                const count = streetData.coordinates.length;
-                                const type = streetData.metadata?.display_info || '';
-                                coordInfo = `${count} punti${type ? ' - ' + type : ''}`;
-                            }
-                        }
-                        
-                        const statusClass = hasCoords ? 'found' : 'not-found';
-                        
-                        html += `<div class="street ${statusClass}">`;
-                        html += `<div class="street-content" onclick="focusStreet('${ordId}', '${zoneName}', \`${streetName.replace(/`/g, '\\`')}\`)">`;
-                        html += `<div class="street-name">${streetName}</div>`;
-                        if (hasCoords) {
-                            html += `<div class="street-info">${coordInfo}</div>`;
-                        }
-                        html += `</div>`;
-                        if (hasCoords) {
-                            html += `<button class="btn-street" onclick="toggleStreetEye('${ordId}', '${zoneName}', \`${streetName.replace(/`/g, '\\`')}\`)">👁️</button>`;
-                        }
-                        html += `</div>`;
-                    });
-                    
-                    html += `</div>`; // Close zone-content
-                    html += `</div>`; // Close zone
+            let marker;
+            if (isIntersection) {
+                // Intersection point - larger red marker
+                const intersectionIcon = L.divIcon({
+                    className: 'intersection-marker',
+                    html: '<div style="background-color: #ff6600; width: 18px; height: 18px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.4);"></div>',
+                    iconSize: [24, 24],
+                    iconAnchor: [12, 12]
                 });
-                
-                html += `</div>`; // Close ordinance-content
-                html += `</div>`; // Close ordinance
-            });
-            
-            interfaceContainer.innerHTML = html;
-            console.log('Interface generated - only ordinance headers visible');
-        }
-
-        // Toggle ordinance visibility
-        function toggleOrdinance(ordId) {
-            const content = document.getElementById(`ord-${ordId}`);
-            if (content) {
-                const isVisible = content.style.display === 'block';
-                content.style.display = isVisible ? 'none' : 'block';
-                console.log(`Ordinance ${ordId}: ${isVisible ? 'closed' : 'opened'}`);
-            }
-        }
-
-        // Toggle zone visibility  
-        function toggleZone(ordId, zoneName) {
-            const zoneId = `${ordId}_${zoneName}`.replace(/[^a-zA-Z0-9_]/g, '_');
-            const content = document.getElementById(`zone-${zoneId}`);
-            if (content) {
-                const isVisible = content.style.display === 'block';
-                content.style.display = isVisible ? 'none' : 'block';
-                console.log(`Zone ${zoneName}: ${isVisible ? 'closed' : 'opened'}`);
-            }
-        }
-
-        // ORDINANCE EYE: Show/hide all streets in ordinance
-        function toggleOrdinanceEye(ordId) {
-            const ordData = coordinatesData[ordId];
-            if (!ordData) return;
-            
-            // Check if any streets in this ordinance are visible
-            let hasVisibleStreets = false;
-            Object.entries(ordData.zones).forEach(([zoneName, streets]) => {
-                Object.keys(streets).forEach(streetName => {
-                    const layerId = `street-${ordId}-${zoneName}-${streetName}`;
-                    if (currentLayers[layerId]) {
-                        hasVisibleStreets = true;
-                    }
-                });
-            });
-            
-            if (hasVisibleStreets) {
-                // Hide all streets in ordinance
-                hideAllOrdinanceStreets(ordId);
-                updateOrdinanceEyeButton(ordId, false);
+                marker = L.marker(coords, { icon: intersectionIcon });
             } else {
-                // Show all streets in ordinance
-                showAllOrdinanceStreets(ordId);
-                updateOrdinanceEyeButton(ordId, true);
-            }
-        }
-
-        // ZONE EYE: Show/hide all streets in zone (deactivates ordinance eye)
-        function toggleZoneEye(ordId, zoneName) {
-            const ordData = coordinatesData[ordId];
-            if (!ordData || !ordData.zones[zoneName]) return;
-            
-            // Check if any streets in this zone are visible
-            let hasVisibleStreets = false;
-            Object.keys(ordData.zones[zoneName]).forEach(streetName => {
-                const layerId = `street-${ordId}-${zoneName}-${streetName}`;
-                if (currentLayers[layerId]) {
-                    hasVisibleStreets = true;
-                }
-            });
-            
-            if (hasVisibleStreets) {
-                // Hide all streets in zone
-                hideAllZoneStreets(ordId, zoneName);
-                updateZoneEyeButton(ordId, zoneName, false);
-            } else {
-                // First deactivate ordinance eye (since we're showing partial)
-                updateOrdinanceEyeButton(ordId, false);
-                
-                // Show all streets in zone
-                showAllZoneStreets(ordId, zoneName);
-                updateZoneEyeButton(ordId, zoneName, true);
-            }
-        }
-
-        // STREET EYE: Show/hide individual street (deactivates zone and ordinance eyes)
-        function toggleStreetEye(ordId, zoneName, streetName) {
-            const layerId = `street-${ordId}-${zoneName}-${streetName}`;
-            
-            if (currentLayers[layerId]) {
-                // Hide this street
-                hideStreet(ordId, zoneName, streetName);
-                updateStreetEyeButton(ordId, zoneName, streetName, false);
-            } else {
-                // First deactivate higher level eyes (since we're showing partial)
-                updateOrdinanceEyeButton(ordId, false);
-                updateZoneEyeButton(ordId, zoneName, false);
-                
-                // Show this street
-                showStreet(ordId, zoneName, streetName);
-                updateStreetEyeButton(ordId, zoneName, streetName, true);
-            }
-        }
-
-        // Helper functions for showing/hiding streets
-        function showAllOrdinanceStreets(ordId) {
-            const ordData = coordinatesData[ordId];
-            Object.entries(ordData.zones).forEach(([zoneName, streets]) => {
-                Object.entries(streets).forEach(([streetName, streetData]) => {
-                    if (streetData) {
-                        showStreet(ordId, zoneName, streetName);
-                        updateStreetEyeButton(ordId, zoneName, streetName, true);
-                    }
-                });
-                updateZoneEyeButton(ordId, zoneName, true);
-            });
-        }
-
-        function hideAllOrdinanceStreets(ordId) {
-            const ordData = coordinatesData[ordId];
-            Object.entries(ordData.zones).forEach(([zoneName, streets]) => {
-                Object.keys(streets).forEach(streetName => {
-                    hideStreet(ordId, zoneName, streetName);
-                    updateStreetEyeButton(ordId, zoneName, streetName, false);
-                });
-                updateZoneEyeButton(ordId, zoneName, false);
-            });
-        }
-
-        function showAllZoneStreets(ordId, zoneName) {
-            const streets = coordinatesData[ordId]?.zones[zoneName];
-            if (streets) {
-                Object.entries(streets).forEach(([streetName, streetData]) => {
-                    if (streetData) {
-                        showStreet(ordId, zoneName, streetName);
-                        updateStreetEyeButton(ordId, zoneName, streetName, true);
-                    }
-                });
-            }
-        }
-
-        function hideAllZoneStreets(ordId, zoneName) {
-            const streets = coordinatesData[ordId]?.zones[zoneName];
-            if (streets) {
-                Object.keys(streets).forEach(streetName => {
-                    hideStreet(ordId, zoneName, streetName);
-                    updateStreetEyeButton(ordId, zoneName, streetName, false);
-                });
-            }
-        }
-
-        function showStreet(ordId, zoneName, streetName) {
-            const streetData = coordinatesData[ordId]?.zones[zoneName]?.[streetName];
-            if (!streetData) return;
-            
-            const layerId = `street-${ordId}-${zoneName}-${streetName}`;
-            
-            // Create red dots for this street
-            const streetLayer = createStreetLayer(streetName, streetData);
-            if (streetLayer) {
-                streetLayer.addTo(map);
-                currentLayers[layerId] = streetLayer;
-            }
-        }
-
-        function hideStreet(ordId, zoneName, streetName) {
-            const layerId = `street-${ordId}-${zoneName}-${streetName}`;
-            if (currentLayers[layerId]) {
-                map.removeLayer(currentLayers[layerId]);
-                delete currentLayers[layerId];
-            }
-        }
-
-        // Create layer for a street (red dots)
-        function createStreetLayer(streetName, streetData) {
-            const layerGroup = L.layerGroup();
-            
-            let coordinates = [];
-            if (Array.isArray(streetData)) {
-                coordinates = streetData;
-            } else if (streetData.coordinates) {
-                streetData.coordinates.forEach(coordItem => {
-                    if (coordItem.coords) {
-                        coordinates.push(coordItem.coords);
-                    } else if (Array.isArray(coordItem)) {
-                        coordinates.push(coordItem);
-                    }
-                });
-            }
-            
-            coordinates.forEach(coord => {
-                if (!coord || coord.length !== 2) return;
-                
-                const [lat, lon] = coord;
-                const marker = L.circleMarker([lat, lon], {
-                    color: '#dc3545',
-                    fillColor: '#dc3545',
-                    fillOpacity: 0.8,
+                // Regular street point - standard red marker
+                marker = L.circleMarker(coords, {
                     radius: 5,
-                    weight: 2
+                    fillColor: '#ff0000',
+                    color: '#ffffff',
+                    weight: 2,
+                    opacity: 1,
+                    fillOpacity: 0.8
                 });
+            }
+            
+            // Add metadata to marker
+            marker.ordId = ordId;
+            marker.zoneName = zoneName;
+            marker.streetName = streetName;
+            marker.isIntersection = isIntersection;
+            
+            // Popup content
+            let popupContent = `<strong>${streetName}</strong><br>`;
+            popupContent += `<em>Zone:</em> ${zoneName}<br>`;
+            popupContent += `<em>Ordinance:</em> ${ordId}<br>`;
+            if (metadata.display_info) {
+                popupContent += `<em>Info:</em> ${metadata.display_info}<br>`;
+            }
+            popupContent += `<em>Type:</em> ${metadata.type}<br>`;
+            if (isIntersection) {
+                popupContent += `<span style="color: #ff6600;">🎯 Calculated intersection point</span>`;
+            }
+            
+            marker.bindPopup(popupContent);
+            return marker;
+        }
+
+        function loadCoordinates() {
+            let totalStreets = 0;
+            let streetsWithCoords = 0;
+            let intersectionCount = 0;
+            let calculatedIntersections = 0;
+
+            console.log('Loading coordinates data:', coordinatesData);
+
+            for (const [ordId, ordData] of Object.entries(coordinatesData)) {
+                console.log(`Processing ordinance: ${ordId}`);
                 
-                marker.bindPopup(`<div class="popup-content"><h4>🔴 ${streetName}</h4></div>`);
-                layerGroup.addLayer(marker);
-            });
-            
-            return layerGroup.getLayers().length > 0 ? layerGroup : null;
-        }
-
-        // Update button appearances
-        function updateOrdinanceEyeButton(ordId, isActive) {
-            const button = document.querySelector(`button[onclick*="toggleOrdinanceEye('${ordId}')"]`);
-            if (button) {
-                if (isActive) {
-                    button.classList.add('active');
-                } else {
-                    button.classList.remove('active');
+                if (!ordinanceGroups[ordId]) {
+                    ordinanceGroups[ordId] = {};
                 }
-            }
-        }
 
-        function updateZoneEyeButton(ordId, zoneName, isActive) {
-            const button = document.querySelector(`button[onclick*="toggleZoneEye('${ordId}', '${zoneName}')"]`);
-            if (button) {
-                if (isActive) {
-                    button.classList.add('active');
-                } else {
-                    button.classList.remove('active');
-                }
-            }
-        }
-
-        function updateStreetEyeButton(ordId, zoneName, streetName, isActive) {
-            const buttons = document.querySelectorAll(`button[onclick*="toggleStreetEye('${ordId}', '${zoneName}', \`${streetName.replace(/`/g, '\\`')}\`)"]`);
-            buttons.forEach(button => {
-                if (isActive) {
-                    button.classList.add('active');
-                } else {
-                    button.classList.remove('active');
-                }
-            });
-        }
-
-        // Focus on street
-        function focusStreet(ordId, zoneName, streetName) {
-            const streetData = coordinatesData[ordId]?.zones[zoneName]?.[streetName];
-            if (!streetData) {
-                alert('Nessuna coordinata disponibile per questa strada');
-                return;
-            }
-            
-            // Ensure this street is visible
-            const layerId = `street-${ordId}-${zoneName}-${streetName}`;
-            if (!currentLayers[layerId]) {
-                showStreet(ordId, zoneName, streetName);
-                updateStreetEyeButton(ordId, zoneName, streetName, true);
-                // Deactivate higher level eyes
-                updateOrdinanceEyeButton(ordId, false);
-                updateZoneEyeButton(ordId, zoneName, false);
-            }
-            
-            // Focus on coordinates
-            let coordinates = [];
-            if (Array.isArray(streetData)) {
-                coordinates = streetData;
-            } else if (streetData.coordinates) {
-                streetData.coordinates.forEach(coordItem => {
-                    if (coordItem.coords) {
-                        coordinates.push(coordItem.coords);
-                    } else if (Array.isArray(coordItem)) {
-                        coordinates.push(coordItem);
+                for (const [zoneName, streets] of Object.entries(ordData.zones)) {
+                    console.log(`  Processing zone: ${zoneName}, streets:`, Object.keys(streets));
+                    
+                    if (!ordinanceGroups[ordId][zoneName]) {
+                        ordinanceGroups[ordId][zoneName] = L.layerGroup();
                     }
+
+                    for (const [streetName, streetData] of Object.entries(streets)) {
+                        totalStreets++;
+                        
+                        // Initialize street marker tracking
+                        const streetKey = `${ordId}-${zoneName}-${streetName}`;
+                        streetMarkers[streetKey] = [];
+                        
+                        console.log(`    Processing street: ${streetName}`, streetData);
+                        
+                        // Process ANY street data, even if coordinates is null initially
+                        if (streetData) {
+                            // Handle case where coordinates might be null
+                            if (streetData.coordinates && Array.isArray(streetData.coordinates) && streetData.coordinates.length > 0) {
+                                streetsWithCoords++;
+                                
+                                // Check coordinate format - are they objects with type/coords or direct arrays?
+                                const firstCoord = streetData.coordinates[0];
+                                const isObjectFormat = firstCoord && typeof firstCoord === 'object' && firstCoord.coords;
+                                const isDirectFormat = firstCoord && Array.isArray(firstCoord) && firstCoord.length === 2;
+                                
+                                console.log(`      Coordinate format for ${streetName}: ${isObjectFormat ? 'object' : isDirectFormat ? 'direct' : 'unknown'}`, firstCoord);
+                                
+                                if (streetData.metadata?.type === 'incrocio') {
+                                    intersectionCount++;
+                                    
+                                    if (isObjectFormat) {
+                                        // Look for calculated intersection point
+                                        const intersectionCoord = streetData.coordinates.find(c => c.type === 'intersection');
+                                        
+                                        if (intersectionCoord) {
+                                            // Show only the calculated intersection point
+                                            calculatedIntersections++;
+                                            const marker = createMarker(intersectionCoord.coords, streetData.metadata, streetName, ordId, zoneName);
+                                            if (marker) {
+                                                ordinanceGroups[ordId][zoneName].addLayer(marker);
+                                                allMarkers.push(marker);
+                                                streetMarkers[streetKey].push(marker);
+                                                console.log(`      Added intersection marker for: ${streetName}`);
+                                            }
+                                        } else {
+                                            // Show all intersection coordinates (fallback)
+                                            streetData.coordinates.forEach((coordData, index) => {
+                                                if (coordData && coordData.coords) {
+                                                    const marker = createMarker(coordData.coords, streetData.metadata, streetName, ordId, zoneName);
+                                                    if (marker) {
+                                                        ordinanceGroups[ordId][zoneName].addLayer(marker);
+                                                        allMarkers.push(marker);
+                                                        streetMarkers[streetKey].push(marker);
+                                                        console.log(`      Added intersection fallback marker ${index} for: ${streetName}`);
+                                                    }
+                                                }
+                                            });
+                                        }
+                                    } else if (isDirectFormat) {
+                                        // Direct format intersection (fallback)
+                                        streetData.coordinates.forEach((coords, index) => {
+                                            if (coords && Array.isArray(coords) && coords.length === 2) {
+                                                const marker = createMarker(coords, streetData.metadata, streetName, ordId, zoneName);
+                                                if (marker) {
+                                                    ordinanceGroups[ordId][zoneName].addLayer(marker);
+                                                    allMarkers.push(marker);
+                                                    streetMarkers[streetKey].push(marker);
+                                                    console.log(`      Added direct intersection marker ${index} for: ${streetName}`);
+                                                }
+                                            }
+                                        });
+                                    }
+                                } else {
+                                    // Regular street - handle both formats
+                                    if (isObjectFormat) {
+                                        // Object format: {type: "...", coords: [lat, lon]}
+                                        streetData.coordinates.forEach((coordData, index) => {
+                                            if (coordData && coordData.coords) {
+                                                const marker = createMarker(coordData.coords, streetData.metadata, streetName, ordId, zoneName);
+                                                if (marker) {
+                                                    ordinanceGroups[ordId][zoneName].addLayer(marker);
+                                                    allMarkers.push(marker);
+                                                    streetMarkers[streetKey].push(marker);
+                                                    console.log(`      Added object format marker ${index} for: ${streetName}`);
+                                                }
+                                            } else {
+                                                console.log(`      Skipped null object coordinate ${index} for: ${streetName}`);
+                                            }
+                                        });
+                                    } else if (isDirectFormat) {
+                                        // Direct format: [lat, lon]
+                                        streetData.coordinates.forEach((coords, index) => {
+                                            if (coords && Array.isArray(coords) && coords.length === 2) {
+                                                const marker = createMarker(coords, streetData.metadata, streetName, ordId, zoneName);
+                                                if (marker) {
+                                                    ordinanceGroups[ordId][zoneName].addLayer(marker);
+                                                    allMarkers.push(marker);
+                                                    streetMarkers[streetKey].push(marker);
+                                                    console.log(`      Added direct format marker ${index} for: ${streetName}`);
+                                                }
+                                            } else {
+                                                console.log(`      Skipped null direct coordinate ${index} for: ${streetName}`);
+                                            }
+                                        });
+                                    } else {
+                                        console.log(`      Unknown coordinate format for: ${streetName}`, streetData.coordinates);
+                                    }
+                                }
+                            } else {
+                                console.log(`    No valid coordinates for: ${streetName}`);
+                            }
+                        } else {
+                            console.log(`    Null street data for: ${streetName}`);
+                        }
+                    }
+                    
+                    // Start with all zones visible
+                    ordinanceGroups[ordId][zoneName].addTo(map);
+                    console.log(`  Added zone ${zoneName} to map with ${ordinanceGroups[ordId][zoneName].getLayers().length} markers`);
+                }
+                console.log(`Finished processing ordinance ${ordId}`);
+            }
+
+            console.log(`Total markers created: ${allMarkers.length}`);
+
+            // Update stats
+            document.getElementById('stats').innerHTML = `
+                <strong>Vie trovate:</strong> ${streetsWithCoords}/${totalStreets}<br>
+                <strong>Incroci trovati:</strong> ${intersectionCount}/${calculatedIntersections}<br>
+                <strong>Ordinanze:</strong> ${Object.keys(ordinanceGroups).length}<br>
+            `;
+            // <strong>Punti:</strong> ${allMarkers.length}
+            
+
+            // Create sidebar list
+            createOrdinancesList();
+            updateVisibleMarkers();
+        }
+
+        function createOrdinancesList() {
+            const listDiv = document.getElementById('ordinances-list');
+            
+            for (const [ordId, ordData] of Object.entries(coordinatesData)) {
+                const ordDiv = document.createElement('div');
+                ordDiv.className = 'ordinance';
+                
+                const ordHeader = document.createElement('div');
+                ordHeader.className = 'ordinance-header';
+                
+                const ordTitle = document.createElement('div');
+                ordTitle.className = 'ordinance-title';
+                ordTitle.textContent = `📋 Prot. n. ${ordData.metadata?.protocol || ordId} (${ordData.metadata?.date || 'N/A'})`;
+                ordTitle.onclick = () => toggleOrdinanceExpansion(ordId);
+                
+                const ordToggle = document.createElement('button');
+                ordToggle.className = 'toggle-btn active';
+                ordToggle.textContent = '✓';
+                ordToggle.title = 'Toggle visibility on map';
+                ordToggle.onclick = (e) => {
+                    e.stopPropagation();
+                    toggleOrdinanceVisibility(ordId, ordToggle);
+                };
+                
+                ordHeader.appendChild(ordTitle);
+                ordHeader.appendChild(ordToggle);
+                
+                const ordContent = document.createElement('div');
+                ordContent.className = 'ordinance-content';
+                ordContent.id = `ord-${ordId}`;
+                ordContent.style.display = 'none'; // Start collapsed
+                
+                for (const [zoneName, streets] of Object.entries(ordData.zones)) {
+                    const zoneDiv = document.createElement('div');
+                    zoneDiv.className = 'zone';
+                    
+                    const zoneHeader = document.createElement('div');
+                    zoneHeader.className = 'zone-header';
+                    
+                    const zoneTitle = document.createElement('div');
+                    zoneTitle.className = 'zone-title';
+                    zoneTitle.textContent = `📍 ${zoneName}`;
+                    zoneTitle.onclick = () => toggleZoneExpansion(ordId, zoneName);
+                    
+                    const zoneToggle = document.createElement('button');
+                    zoneToggle.className = 'toggle-btn active';
+                    zoneToggle.textContent = '✓';
+                    zoneToggle.title = 'Toggle zone visibility on map';
+                    zoneToggle.onclick = (e) => {
+                        e.stopPropagation();
+                        toggleZoneVisibility(ordId, zoneName, zoneToggle);
+                    };
+                    
+                    zoneHeader.appendChild(zoneTitle);
+                    zoneHeader.appendChild(zoneToggle);
+                    
+                    const zoneContent = document.createElement('div');
+                    zoneContent.className = 'zone-content';
+                    zoneContent.id = `zone-${ordId}-${zoneName}`;
+                    zoneContent.style.display = 'none'; // Start collapsed
+                    
+                    for (const [streetName, streetData] of Object.entries(streets)) {
+                        const streetDiv = document.createElement('div');
+                        streetDiv.className = 'street-item';
+                        
+                        const streetNameDiv = document.createElement('div');
+                        streetNameDiv.className = 'street-name';
+                        
+                        if (!streetData || !streetData.coordinates) {
+                            streetDiv.className += ' no-coords';
+                            streetNameDiv.textContent = `❌ ${streetName}`;
+                        } else if (streetData.metadata?.type === 'incrocio') {
+                            streetDiv.className += ' intersection';
+                            streetNameDiv.textContent = `🎯 ${streetName}`;
+                        } else {
+                            streetDiv.className += ' has-coords';
+                            streetNameDiv.textContent = `🔴 ${streetName}`;
+                        }
+                        
+                        streetNameDiv.onclick = () => focusOnStreet(ordId, zoneName, streetName);
+                        
+                        const streetToggle = document.createElement('button');
+                        if (streetData && streetData.coordinates && streetData.coordinates.length > 0) {
+                            streetToggle.className = 'toggle-btn active';
+                            streetToggle.textContent = '✓';
+                            streetToggle.title = 'Toggle street visibility on map';
+                            streetToggle.onclick = (e) => {
+                                e.stopPropagation();
+                                toggleStreetVisibility(ordId, zoneName, streetName, streetToggle);
+                            };
+                        } else {
+                            streetToggle.className = 'toggle-btn';
+                            streetToggle.textContent = '✗';
+                            streetToggle.disabled = true;
+                            streetToggle.title = 'No coordinates available';
+                        }
+                        
+                        streetDiv.appendChild(streetNameDiv);
+                        streetDiv.appendChild(streetToggle);
+                        zoneContent.appendChild(streetDiv);
+                    }
+                    
+                    zoneDiv.appendChild(zoneHeader);
+                    zoneDiv.appendChild(zoneContent);
+                    ordContent.appendChild(zoneDiv);
+                }
+                
+                ordDiv.appendChild(ordHeader);
+                ordDiv.appendChild(ordContent);
+                listDiv.appendChild(ordDiv);
+            }
+        }
+
+        function toggleOrdinanceExpansion(ordId) {
+            const content = document.getElementById(`ord-${ordId}`);
+            const isVisible = content.style.display !== 'none';
+            content.style.display = isVisible ? 'none' : 'block';
+        }
+
+        function toggleOrdinanceVisibility(ordId, button) {
+            const isVisible = button.classList.contains('active');
+            const newState = !isVisible;
+            
+            // Update ordinance button
+            button.classList.toggle('active', newState);
+            button.textContent = newState ? '✓' : '☐';
+            
+            // Find the ordinance content div
+            const ordinanceContent = document.getElementById(`ord-${ordId}`);
+            
+            // Update all zone buttons and their visibility
+            for (const zoneName of Object.keys(ordinanceGroups[ordId])) {
+                // Find zone header within this ordinance
+                const zoneContent = document.getElementById(`zone-${ordId}-${zoneName}`);
+                const zoneHeader = zoneContent.previousElementSibling; // The zone-header div
+                const zoneButton = zoneHeader.querySelector('.toggle-btn');
+                
+                if (zoneButton) {
+                    zoneButton.classList.toggle('active', newState);
+                    zoneButton.textContent = newState ? '✓' : '☐';
+                }
+                
+                if (newState) {
+                    map.addLayer(ordinanceGroups[ordId][zoneName]);
+                } else {
+                    map.removeLayer(ordinanceGroups[ordId][zoneName]);
+                }
+                
+                // Update all street buttons in this zone
+                const streetButtons = zoneContent.querySelectorAll('.toggle-btn:not([disabled])');
+                streetButtons.forEach(streetBtn => {
+                    streetBtn.classList.toggle('active', newState);
+                    streetBtn.textContent = newState ? '✓' : '☐';
                 });
             }
             
-            if (coordinates.length === 1) {
-                map.setView(coordinates[0], 17);
-            } else if (coordinates.length > 1) {
-                const bounds = L.latLngBounds(coordinates);
-                map.fitBounds(bounds, { padding: [30, 30] });
+            updateVisibleMarkers();
+        }
+
+        function toggleZoneExpansion(ordId, zoneName) {
+            const content = document.getElementById(`zone-${ordId}-${zoneName}`);
+            const isVisible = content.style.display !== 'none';
+            content.style.display = isVisible ? 'none' : 'block';
+        }
+
+        function toggleZoneVisibility(ordId, zoneName, button) {
+            const isVisible = button.classList.contains('active');
+            const newState = !isVisible;
+            
+            // Update zone button
+            button.classList.toggle('active', newState);
+            button.textContent = newState ? '✓' : '☐';
+            
+            // Update map layer
+            if (newState) {
+                map.addLayer(ordinanceGroups[ordId][zoneName]);
+            } else {
+                map.removeLayer(ordinanceGroups[ordId][zoneName]);
+            }
+            
+            // Update all street buttons in this zone
+            const zoneContent = document.getElementById(`zone-${ordId}-${zoneName}`);
+            const streetButtons = zoneContent.querySelectorAll('.toggle-btn:not([disabled])');
+            streetButtons.forEach(streetBtn => {
+                streetBtn.classList.toggle('active', newState);
+                streetBtn.textContent = newState ? '✓' : '☐';
+            });
+            
+            updateVisibleMarkers();
+        }
+
+        function toggleStreetVisibility(ordId, zoneName, streetName, button) {
+            const streetKey = `${ordId}-${zoneName}-${streetName}`;
+            const markers = streetMarkers[streetKey] || [];
+            const isVisible = button.classList.contains('active');
+            
+            markers.forEach(marker => {
+                if (isVisible) {
+                    ordinanceGroups[ordId][zoneName].removeLayer(marker);
+                } else {
+                    ordinanceGroups[ordId][zoneName].addLayer(marker);
+                }
+            });
+            
+            button.classList.toggle('active');
+            button.textContent = isVisible ? '☐' : '✓';
+            updateVisibleMarkers();
+        }
+
+        function focusOnStreet(ordId, zoneName, streetName) {
+            const streetKey = `${ordId}-${zoneName}-${streetName}`;
+            const streetMarkersForStreet = streetMarkers[streetKey] || [];
+            
+            if (streetMarkersForStreet.length > 0) {
+                const group = L.featureGroup(streetMarkersForStreet);
+                map.fitBounds(group.getBounds().pad(0.1));
+                
+                // Open popup for first marker
+                streetMarkersForStreet[0].openPopup();
             }
         }
 
-        // Initialize everything when page loads
-        document.addEventListener('DOMContentLoaded', function() {
-            initMap();
-            loadCoordinates();
-            console.log('🗺️ Visualizzatore caricato');
-        });
+        function toggleAllOrdinances() {
+            const allOrdinanceButtons = document.querySelectorAll('.ordinance-header .toggle-btn');
+            const allActive = Array.from(allOrdinanceButtons).every(btn => btn.classList.contains('active'));
+            const newState = !allActive;
+            
+            // Update the Toggle All button text
+            const toggleAllButton = document.querySelector('.controls .btn');
+            toggleAllButton.textContent = newState ? 'mostra tutto' : 'nascondi tutto';
+            
+            // Update all ordinance buttons
+            allOrdinanceButtons.forEach(button => {
+                const ordId = button.closest('.ordinance').querySelector('.ordinance-title').textContent.replace('📋 ', '');
+                
+                // Update ordinance button
+                button.classList.toggle('active', newState);
+                button.textContent = newState ? '✓' : '☐';
+                
+                // Update all zones for this ordinance
+                Object.keys(ordinanceGroups[ordId]).forEach(zoneName => {
+                    // Find zone header and button
+                    const zoneContent = document.getElementById(`zone-${ordId}-${zoneName}`);
+                    const zoneHeader = zoneContent.previousElementSibling;
+                    const zoneButton = zoneHeader.querySelector('.toggle-btn');
+                    
+                    if (zoneButton) {
+                        zoneButton.classList.toggle('active', newState);
+                        zoneButton.textContent = newState ? '✓' : '☐';
+                    }
+                    
+                    // Update map layer
+                    if (newState) {
+                        map.addLayer(ordinanceGroups[ordId][zoneName]);
+                    } else {
+                        map.removeLayer(ordinanceGroups[ordId][zoneName]);
+                    }
+                    
+                    // Update all street buttons in this zone
+                    const streetButtons = zoneContent.querySelectorAll('.toggle-btn:not([disabled])');
+                    streetButtons.forEach(streetBtn => {
+                        streetBtn.classList.toggle('active', newState);
+                        streetBtn.textContent = newState ? '✓' : '☐';
+                    });
+                });
+            });
+            
+            updateVisibleMarkers();
+        }
+
+        function fitToVisible() {
+            updateVisibleMarkers();
+            if (visibleMarkers.length > 0) {
+                const group = L.featureGroup(visibleMarkers);
+                map.fitBounds(group.getBounds().pad(0.1));
+            }
+        }
+
+        function updateVisibleMarkers() {
+            visibleMarkers = allMarkers.filter(marker => map.hasLayer(marker) || marker._map);
+        }
+
+        function toggleSidebar() {
+            const content = document.getElementById('sidebar-content');
+            const controls = document.getElementById('sidebar-controls');
+            const toggle = document.getElementById('sidebar-toggle');
+            
+            const isVisible = content.style.display !== 'none';
+            
+            content.style.display = isVisible ? 'none' : 'block';
+            controls.style.display = isVisible ? 'none' : 'block';
+            toggle.textContent = isVisible ? '▶' : '▼';
+        }
+
+        // Initialize
+        loadCoordinates();
     </script>
 </body>
 </html>
