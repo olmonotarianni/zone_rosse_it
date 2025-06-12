@@ -1,9 +1,9 @@
 {
-  "ordinanza_6747": {
+  "ordinance_6747": {
     "metadata": {
       "protocol": "6747",
       "date": "2025-01-08",
-      "title": "Ordinanza prefettizia"
+      "title": "Prima ordinanza prefettizia"
     },
     "zones": {
       "Zona Esquilino": {
@@ -15,7 +15,7 @@
             "query_targets": [
               "Via Giovanni Giolitti"
             ],
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "original_text": "Via Giovanni Giolitti"
           },
           "coordinates": [
@@ -1202,7 +1202,7 @@
           ],
           "metadata": {
             "type": "simple",
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "color": "green",
             "icon": "📍",
             "found_variant": "Via Giovanni Giolitti"
@@ -1216,7 +1216,7 @@
             "query_targets": [
               "Via Giovanni Amendola"
             ],
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "original_text": "Via Giovanni Amendola"
           },
           "coordinates": [
@@ -1455,7 +1455,7 @@
           ],
           "metadata": {
             "type": "simple",
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "color": "green",
             "icon": "📍",
             "found_variant": "Via Giovanni Amendola"
@@ -1469,7 +1469,7 @@
             "query_targets": [
               "Via Filippo Turati"
             ],
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "original_text": "Via Filippo Turati"
           },
           "coordinates": [
@@ -1744,7 +1744,7 @@
           ],
           "metadata": {
             "type": "simple",
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "color": "green",
             "icon": "📍",
             "found_variant": "Via Filippo Turati"
@@ -1758,7 +1758,7 @@
             "query_targets": [
               "Via Principe Amedeo"
             ],
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "original_text": "Via Principe Amedeo"
           },
           "coordinates": [
@@ -2361,7 +2361,7 @@
           ],
           "metadata": {
             "type": "simple",
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "color": "green",
             "icon": "📍",
             "found_variant": "Via Principe Amedeo"
@@ -2375,7 +2375,7 @@
             "query_targets": [
               "Via Daniele Manin"
             ],
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "original_text": "Via Daniele Manin"
           },
           "coordinates": [
@@ -2646,7 +2646,7 @@
           ],
           "metadata": {
             "type": "simple",
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "color": "green",
             "icon": "📍",
             "found_variant": "Via Daniele Manin"
@@ -2660,7 +2660,7 @@
             "query_targets": [
               "Via Vincenzo Gioberti"
             ],
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "original_text": "Via Vincenzo Gioberti"
           },
           "coordinates": [
@@ -2823,7 +2823,7 @@
           ],
           "metadata": {
             "type": "simple",
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "color": "green",
             "icon": "📍",
             "found_variant": "Gioberti"
@@ -2837,7 +2837,7 @@
             "query_targets": [
               "Piazza Manfredo Fanti"
             ],
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "original_text": "Piazza Manfredo Fanti"
           },
           "coordinates": [
@@ -2964,7 +2964,7 @@
           ],
           "metadata": {
             "type": "simple",
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "color": "green",
             "icon": "📍",
             "found_variant": "Piazza Manfredo Fanti"
@@ -2978,7 +2978,7 @@
             "query_targets": [
               "Via Carlo Cattaneo"
             ],
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "original_text": "Via Carlo Cattaneo"
           },
           "coordinates": [
@@ -3081,7 +3081,7 @@
           ],
           "metadata": {
             "type": "simple",
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "color": "green",
             "icon": "📍",
             "found_variant": "Via Carlo Cattaneo"
@@ -3095,7 +3095,7 @@
             "query_targets": [
               "Via Enrico Cialdini"
             ],
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "original_text": "Via Enrico Cialdini"
           },
           "coordinates": [
@@ -3134,7 +3134,7 @@
           ],
           "metadata": {
             "type": "simple",
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "color": "green",
             "icon": "📍",
             "found_variant": "Via Enrico Cialdini"
@@ -3148,7 +3148,7 @@
             "query_targets": [
               "Via Urbano Rattazzi"
             ],
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "original_text": "Via Urbano Rattazzi"
           },
           "coordinates": [
@@ -3311,7 +3311,7 @@
           ],
           "metadata": {
             "type": "simple",
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "color": "green",
             "icon": "📍",
             "found_variant": "Via Urbano Rattazzi"
@@ -3325,7 +3325,7 @@
             "query_targets": [
               "Via Alfredo Cappellini"
             ],
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "original_text": "Via Alfredo Cappellini"
           },
           "coordinates": [
@@ -3392,7 +3392,7 @@
           ],
           "metadata": {
             "type": "simple",
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "color": "green",
             "icon": "📍",
             "found_variant": "Via Alfredo Cappellini"
@@ -3406,7 +3406,7 @@
             "query_targets": [
               "Via Mamiani"
             ],
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "original_text": "Via Mamiani"
           },
           "coordinates": [
@@ -3533,7 +3533,7 @@
           ],
           "metadata": {
             "type": "simple",
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "color": "green",
             "icon": "📍",
             "found_variant": "Via Mamiani"
@@ -3547,7 +3547,7 @@
             "query_targets": [
               "Via Bettino Ricasoli"
             ],
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "original_text": "Via Bettino Ricasoli"
           },
           "coordinates": [
@@ -3714,7 +3714,7 @@
           ],
           "metadata": {
             "type": "simple",
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "color": "green",
             "icon": "📍",
             "found_variant": "Ricasoli"
@@ -3728,7 +3728,7 @@
             "query_targets": [
               "Via La Marmora"
             ],
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "original_text": "Via La Marmora"
           },
           "coordinates": [
@@ -3795,7 +3795,7 @@
           ],
           "metadata": {
             "type": "simple",
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "color": "green",
             "icon": "📍",
             "found_variant": "Via Lamarmora"
@@ -3809,7 +3809,7 @@
             "query_targets": [
               "Piazza Vittorio Emanuele II"
             ],
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "original_text": "Piazza Vittorio Emanuele II"
           },
           "coordinates": [
@@ -3864,7 +3864,7 @@
           ],
           "metadata": {
             "type": "simple",
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "color": "green",
             "icon": "📍",
             "found_variant": "Piazza Vittorio Emanuele II"
@@ -3880,7 +3880,7 @@
             "query_targets": [
               "Via Monselice"
             ],
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "original_text": "Via Monselice"
           },
           "coordinates": [
@@ -4023,7 +4023,7 @@
           ],
           "metadata": {
             "type": "simple",
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "color": "green",
             "icon": "📍",
             "found_variant": "Via Monselice"
@@ -4037,7 +4037,7 @@
             "query_targets": [
               "Via Adria"
             ],
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "original_text": "Via Adria"
           },
           "coordinates": [
@@ -4192,7 +4192,7 @@
           ],
           "metadata": {
             "type": "simple",
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "color": "green",
             "icon": "📍",
             "found_variant": "Via Adria"
@@ -8713,8 +8713,14 @@
             "color": "blue",
             "icon": "🏠",
             "found_variant": "Via Tuscolana",
-            "note": "Showing entire street (house number 212 not precisely located)"
-          }
+            "note": "Found specific coordinates for house number 212"
+          },
+          "special_coordinates": [
+            [
+              41.8784249,
+              12.523155
+            ]
+          ]
         },
         "Via Mestre": {
           "specification": {
@@ -8724,7 +8730,7 @@
             "query_targets": [
               "Via Mestre"
             ],
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "original_text": "Via Mestre"
           },
           "coordinates": [
@@ -8827,7 +8833,7 @@
           ],
           "metadata": {
             "type": "simple",
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "color": "green",
             "icon": "📍",
             "found_variant": "Via Mestre"
@@ -8841,7 +8847,7 @@
             "query_targets": [
               "Piazza Ragusa"
             ],
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "original_text": "Piazza Ragusa"
           },
           "coordinates": [
@@ -9168,7 +9174,7 @@
           ],
           "metadata": {
             "type": "simple",
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "color": "green",
             "icon": "📍",
             "found_variant": "Piazza Ragusa"
@@ -9177,11 +9183,11 @@
       }
     }
   },
-  "ordinanza_133331": {
+  "ordinance_133331": {
     "metadata": {
       "protocol": "133331",
       "date": "2025-03-26",
-      "title": "Ordinanza prefettizia"
+      "title": "Seconda ordinanza prefettizia"
     },
     "zones": {
       "Zona Stazione Termini - Esquilino": {
@@ -9193,7 +9199,7 @@
             "query_targets": [
               "Piazza dei Cinquecento"
             ],
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "original_text": "Piazza dei Cinquecento"
           },
           "coordinates": [
@@ -9786,6 +9792,10 @@
               12.4994011
             ],
             [
+              41.9015564,
+              12.5002393
+            ],
+            [
               41.9003465,
               12.5006882
             ],
@@ -9806,12 +9816,8 @@
               12.5001687
             ],
             [
-              41.9020564,
-              12.4994011
-            ],
-            [
-              41.901682,
-              12.5000242
+              41.9015564,
+              12.5002393
             ],
             [
               41.9014062,
@@ -10440,11 +10446,23 @@
             [
               41.9020564,
               12.4994011
+            ],
+            [
+              41.9020564,
+              12.4994011
+            ],
+            [
+              41.901682,
+              12.5000242
+            ],
+            [
+              41.9015564,
+              12.5002393
             ]
           ],
           "metadata": {
             "type": "simple",
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "color": "green",
             "icon": "📍",
             "found_variant": "Piazza dei Cinquecento"
@@ -12301,6 +12319,13 @@
             {
               "type": "endpoint_1",
               "coords": [
+                41.9015564,
+                12.5002393
+              ]
+            },
+            {
+              "type": "endpoint_1",
+              "coords": [
                 41.9003465,
                 12.5006882
               ]
@@ -12336,15 +12361,8 @@
             {
               "type": "endpoint_1",
               "coords": [
-                41.9020564,
-                12.4994011
-              ]
-            },
-            {
-              "type": "endpoint_1",
-              "coords": [
-                41.901682,
-                12.5000242
+                41.9015564,
+                12.5002393
               ]
             },
             {
@@ -13445,6 +13463,125 @@
                 41.9020564,
                 12.4994011
               ]
+            },
+            {
+              "type": "endpoint_1",
+              "coords": [
+                41.9020564,
+                12.4994011
+              ]
+            },
+            {
+              "type": "endpoint_1",
+              "coords": [
+                41.901682,
+                12.5000242
+              ]
+            },
+            {
+              "type": "endpoint_1",
+              "coords": [
+                41.9015564,
+                12.5002393
+              ]
+            },
+            {
+              "type": "endpoint_2",
+              "coords": [
+                41.8977428,
+                12.5053519
+              ]
+            },
+            {
+              "type": "endpoint_2",
+              "coords": [
+                41.899259,
+                12.5069595
+              ]
+            },
+            {
+              "type": "endpoint_2",
+              "coords": [
+                41.897677,
+                12.5054725
+              ]
+            },
+            {
+              "type": "endpoint_2",
+              "coords": [
+                41.8992032,
+                12.5070535
+              ]
+            },
+            {
+              "type": "endpoint_2",
+              "coords": [
+                41.8993773,
+                12.5070896
+              ]
+            },
+            {
+              "type": "endpoint_2",
+              "coords": [
+                41.899319,
+                12.507186
+              ]
+            },
+            {
+              "type": "endpoint_2",
+              "coords": [
+                41.899259,
+                12.5069595
+              ]
+            },
+            {
+              "type": "endpoint_2",
+              "coords": [
+                41.8977428,
+                12.5053519
+              ]
+            },
+            {
+              "type": "endpoint_2",
+              "coords": [
+                41.8992032,
+                12.5070535
+              ]
+            },
+            {
+              "type": "endpoint_2",
+              "coords": [
+                41.897677,
+                12.5054725
+              ]
+            },
+            {
+              "type": "endpoint_2",
+              "coords": [
+                41.8993773,
+                12.5070896
+              ]
+            },
+            {
+              "type": "endpoint_2",
+              "coords": [
+                41.899259,
+                12.5069595
+              ]
+            },
+            {
+              "type": "endpoint_2",
+              "coords": [
+                41.899319,
+                12.507186
+              ]
+            },
+            {
+              "type": "endpoint_2",
+              "coords": [
+                41.8992032,
+                12.5070535
+              ]
             }
           ],
           "metadata": {
@@ -13454,6 +13591,7 @@
             "icon": "🔗",
             "primary_variant": "Via Marsala",
             "endpoint_1_variant": "piazza dei Cinquecento",
+            "endpoint_2_variant": "Sottopasso Turbigo",
             "note": "Showing entire street with reference points (piazza dei Cinquecento e sottopasso Pettinelli)"
           }
         },
@@ -16568,6 +16706,13 @@
             {
               "type": "endpoint_1",
               "coords": [
+                41.9015564,
+                12.5002393
+              ]
+            },
+            {
+              "type": "endpoint_1",
+              "coords": [
                 41.9003465,
                 12.5006882
               ]
@@ -16603,15 +16748,8 @@
             {
               "type": "endpoint_1",
               "coords": [
-                41.9020564,
-                12.4994011
-              ]
-            },
-            {
-              "type": "endpoint_1",
-              "coords": [
-                41.901682,
-                12.5000242
+                41.9015564,
+                12.5002393
               ]
             },
             {
@@ -17712,6 +17850,125 @@
                 41.9020564,
                 12.4994011
               ]
+            },
+            {
+              "type": "endpoint_1",
+              "coords": [
+                41.9020564,
+                12.4994011
+              ]
+            },
+            {
+              "type": "endpoint_1",
+              "coords": [
+                41.901682,
+                12.5000242
+              ]
+            },
+            {
+              "type": "endpoint_1",
+              "coords": [
+                41.9015564,
+                12.5002393
+              ]
+            },
+            {
+              "type": "endpoint_2",
+              "coords": [
+                41.8977428,
+                12.5053519
+              ]
+            },
+            {
+              "type": "endpoint_2",
+              "coords": [
+                41.899259,
+                12.5069595
+              ]
+            },
+            {
+              "type": "endpoint_2",
+              "coords": [
+                41.897677,
+                12.5054725
+              ]
+            },
+            {
+              "type": "endpoint_2",
+              "coords": [
+                41.8992032,
+                12.5070535
+              ]
+            },
+            {
+              "type": "endpoint_2",
+              "coords": [
+                41.8993773,
+                12.5070896
+              ]
+            },
+            {
+              "type": "endpoint_2",
+              "coords": [
+                41.899319,
+                12.507186
+              ]
+            },
+            {
+              "type": "endpoint_2",
+              "coords": [
+                41.899259,
+                12.5069595
+              ]
+            },
+            {
+              "type": "endpoint_2",
+              "coords": [
+                41.8977428,
+                12.5053519
+              ]
+            },
+            {
+              "type": "endpoint_2",
+              "coords": [
+                41.8992032,
+                12.5070535
+              ]
+            },
+            {
+              "type": "endpoint_2",
+              "coords": [
+                41.897677,
+                12.5054725
+              ]
+            },
+            {
+              "type": "endpoint_2",
+              "coords": [
+                41.8993773,
+                12.5070896
+              ]
+            },
+            {
+              "type": "endpoint_2",
+              "coords": [
+                41.899259,
+                12.5069595
+              ]
+            },
+            {
+              "type": "endpoint_2",
+              "coords": [
+                41.899319,
+                12.507186
+              ]
+            },
+            {
+              "type": "endpoint_2",
+              "coords": [
+                41.8992032,
+                12.5070535
+              ]
             }
           ],
           "metadata": {
@@ -17721,6 +17978,7 @@
             "icon": "🔗",
             "primary_variant": "Via Giovanni Giolitti",
             "endpoint_1_variant": "piazza dei Cinquecento",
+            "endpoint_2_variant": "Sottopasso Turbigo",
             "note": "Showing entire street with reference points (piazza dei Cinquecento e sottopasso Pettinelli)"
           }
         },
@@ -17732,7 +17990,7 @@
             "query_targets": [
               "Via Giovanni Amendola"
             ],
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "original_text": "Via Giovanni Amendola"
           },
           "coordinates": [
@@ -17971,7 +18229,7 @@
           ],
           "metadata": {
             "type": "simple",
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "color": "green",
             "icon": "📍",
             "found_variant": "Via Giovanni Amendola"
@@ -17985,7 +18243,7 @@
             "query_targets": [
               "Via Filippo Turati"
             ],
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "original_text": "Via Filippo Turati"
           },
           "coordinates": [
@@ -18260,7 +18518,7 @@
           ],
           "metadata": {
             "type": "simple",
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "color": "green",
             "icon": "📍",
             "found_variant": "Via Filippo Turati"
@@ -18274,7 +18532,7 @@
             "query_targets": [
               "Via Principe Amedeo"
             ],
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "original_text": "Via Principe Amedeo"
           },
           "coordinates": [
@@ -18877,7 +19135,7 @@
           ],
           "metadata": {
             "type": "simple",
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "color": "green",
             "icon": "📍",
             "found_variant": "Via Principe Amedeo"
@@ -18891,7 +19149,7 @@
             "query_targets": [
               "Via Daniele Manin"
             ],
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "original_text": "Via Daniele Manin"
           },
           "coordinates": [
@@ -19162,7 +19420,7 @@
           ],
           "metadata": {
             "type": "simple",
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "color": "green",
             "icon": "📍",
             "found_variant": "Via Daniele Manin"
@@ -19176,7 +19434,7 @@
             "query_targets": [
               "Via Vincenzo Gioberti"
             ],
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "original_text": "Via Vincenzo Gioberti"
           },
           "coordinates": [
@@ -19339,7 +19597,7 @@
           ],
           "metadata": {
             "type": "simple",
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "color": "green",
             "icon": "📍",
             "found_variant": "Gioberti"
@@ -19353,7 +19611,7 @@
             "query_targets": [
               "Piazza Manfredo Fanti"
             ],
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "original_text": "Piazza Manfredo Fanti"
           },
           "coordinates": [
@@ -19480,7 +19738,7 @@
           ],
           "metadata": {
             "type": "simple",
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "color": "green",
             "icon": "📍",
             "found_variant": "Piazza Manfredo Fanti"
@@ -19494,7 +19752,7 @@
             "query_targets": [
               "Via Carlo Cattaneo"
             ],
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "original_text": "Via Carlo Cattaneo"
           },
           "coordinates": [
@@ -19597,7 +19855,7 @@
           ],
           "metadata": {
             "type": "simple",
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "color": "green",
             "icon": "📍",
             "found_variant": "Via Carlo Cattaneo"
@@ -19611,7 +19869,7 @@
             "query_targets": [
               "Via Enrico Cialdini"
             ],
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "original_text": "Via Enrico Cialdini"
           },
           "coordinates": [
@@ -19650,7 +19908,7 @@
           ],
           "metadata": {
             "type": "simple",
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "color": "green",
             "icon": "📍",
             "found_variant": "Via Enrico Cialdini"
@@ -19664,7 +19922,7 @@
             "query_targets": [
               "Via Urbano Rattazzi"
             ],
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "original_text": "Via Urbano Rattazzi"
           },
           "coordinates": [
@@ -19827,7 +20085,7 @@
           ],
           "metadata": {
             "type": "simple",
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "color": "green",
             "icon": "📍",
             "found_variant": "Via Urbano Rattazzi"
@@ -19841,7 +20099,7 @@
             "query_targets": [
               "Via Alfredo Cappellini"
             ],
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "original_text": "Via Alfredo Cappellini"
           },
           "coordinates": [
@@ -19908,7 +20166,7 @@
           ],
           "metadata": {
             "type": "simple",
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "color": "green",
             "icon": "📍",
             "found_variant": "Via Alfredo Cappellini"
@@ -19922,7 +20180,7 @@
             "query_targets": [
               "Via Mamiani"
             ],
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "original_text": "Via Mamiani"
           },
           "coordinates": [
@@ -20049,7 +20307,7 @@
           ],
           "metadata": {
             "type": "simple",
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "color": "green",
             "icon": "📍",
             "found_variant": "Via Mamiani"
@@ -20063,7 +20321,7 @@
             "query_targets": [
               "Via Bettino Ricasoli"
             ],
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "original_text": "Via Bettino Ricasoli"
           },
           "coordinates": [
@@ -20230,7 +20488,7 @@
           ],
           "metadata": {
             "type": "simple",
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "color": "green",
             "icon": "📍",
             "found_variant": "Ricasoli"
@@ -20244,7 +20502,7 @@
             "query_targets": [
               "Via La Marmora"
             ],
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "original_text": "Via La Marmora"
           },
           "coordinates": [
@@ -20311,7 +20569,7 @@
           ],
           "metadata": {
             "type": "simple",
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "color": "green",
             "icon": "📍",
             "found_variant": "Via Lamarmora"
@@ -20325,7 +20583,7 @@
             "query_targets": [
               "Piazza Vittorio Emanuele II"
             ],
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "original_text": "Piazza Vittorio Emanuele II"
           },
           "coordinates": [
@@ -20380,7 +20638,7 @@
           ],
           "metadata": {
             "type": "simple",
-            "display_info": "Entire street/piazza",
+            "display_info": "Entire street/square",
             "color": "green",
             "icon": "📍",
             "found_variant": "Piazza Vittorio Emanuele II"
@@ -21321,6 +21579,13 @@
             {
               "type": "primary",
               "coords": [
+                41.9059813,
+                12.4376825
+              ]
+            },
+            {
+              "type": "primary",
+              "coords": [
                 41.901952,
                 12.4377418
               ]
@@ -21848,6 +22113,13 @@
               "coords": [
                 41.9059614,
                 12.4376012
+              ]
+            },
+            {
+              "type": "primary",
+              "coords": [
+                41.9059813,
+                12.4376825
               ]
             },
             {
@@ -29779,8 +30051,8 @@
             {
               "type": "intersecting",
               "coords": [
-                41.9002632,
-                12.4421402
+                41.9002637,
+                12.4421617
               ]
             },
             {
@@ -29912,15 +30184,15 @@
             {
               "type": "intersecting",
               "coords": [
-                41.9002632,
-                12.4421402
+                41.9002637,
+                12.4421617
               ]
             },
             {
               "type": "intersecting",
               "coords": [
-                41.9002632,
-                12.4421402
+                41.9002637,
+                12.4421617
               ]
             },
             {
@@ -30122,8 +30394,8 @@
             {
               "type": "intersecting",
               "coords": [
-                41.9002632,
-                12.4421402
+                41.9002637,
+                12.4421617
               ]
             },
             {
@@ -30244,8 +30516,8 @@
             {
               "type": "primary",
               "coords": [
-                41.9002632,
-                12.4421402
+                41.9002637,
+                12.4421617
               ]
             },
             {
@@ -30377,15 +30649,15 @@
             {
               "type": "primary",
               "coords": [
-                41.9002632,
-                12.4421402
+                41.9002637,
+                12.4421617
               ]
             },
             {
               "type": "primary",
               "coords": [
-                41.9002632,
-                12.4421402
+                41.9002637,
+                12.4421617
               ]
             },
             {
@@ -30587,8 +30859,8 @@
             {
               "type": "primary",
               "coords": [
-                41.9002632,
-                12.4421402
+                41.9002637,
+                12.4421617
               ]
             },
             {
@@ -31266,8 +31538,8 @@
             {
               "type": "intersecting",
               "coords": [
-                41.8954498,
-                12.4382194
+                41.8954554,
+                12.4382258
               ]
             },
             {
@@ -32113,6 +32385,13 @@
             {
               "type": "intersecting",
               "coords": [
+                41.8953962,
+                12.438305
+              ]
+            },
+            {
+              "type": "intersecting",
+              "coords": [
                 41.8984454,
                 12.4426423
               ]
@@ -32421,8 +32700,8 @@
             {
               "type": "intersecting",
               "coords": [
-                41.8954498,
-                12.4382194
+                41.8954554,
+                12.4382258
               ]
             },
             {
@@ -33039,6 +33318,13 @@
               "coords": [
                 41.8953877,
                 12.4382962
+              ]
+            },
+            {
+              "type": "intersecting",
+              "coords": [
+                41.8953962,
+                12.438305
               ]
             },
             {
@@ -34426,8 +34712,8 @@
             {
               "type": "primary",
               "coords": [
-                41.8954498,
-                12.4382194
+                41.8954554,
+                12.4382258
               ]
             },
             {
@@ -35273,6 +35559,13 @@
             {
               "type": "primary",
               "coords": [
+                41.8953962,
+                12.438305
+              ]
+            },
+            {
+              "type": "primary",
+              "coords": [
                 41.8984454,
                 12.4426423
               ]
@@ -35581,8 +35874,8 @@
             {
               "type": "primary",
               "coords": [
-                41.8954498,
-                12.4382194
+                41.8954554,
+                12.4382258
               ]
             },
             {
@@ -36199,6 +36492,13 @@
               "coords": [
                 41.8953877,
                 12.4382962
+              ]
+            },
+            {
+              "type": "primary",
+              "coords": [
+                41.8953962,
+                12.438305
               ]
             },
             {
@@ -41684,8 +41984,8 @@
             {
               "type": "intersecting",
               "coords": [
-                41.8954498,
-                12.4382194
+                41.8954554,
+                12.4382258
               ]
             },
             {
@@ -42531,6 +42831,13 @@
             {
               "type": "intersecting",
               "coords": [
+                41.8953962,
+                12.438305
+              ]
+            },
+            {
+              "type": "intersecting",
+              "coords": [
                 41.8984454,
                 12.4426423
               ]
@@ -42839,8 +43146,8 @@
             {
               "type": "intersecting",
               "coords": [
-                41.8954498,
-                12.4382194
+                41.8954554,
+                12.4382258
               ]
             },
             {
@@ -43457,6 +43764,13 @@
               "coords": [
                 41.8953877,
                 12.4382962
+              ]
+            },
+            {
+              "type": "intersecting",
+              "coords": [
+                41.8953962,
+                12.438305
               ]
             },
             {
@@ -44844,8 +45158,8 @@
             {
               "type": "primary",
               "coords": [
-                41.8954498,
-                12.4382194
+                41.8954554,
+                12.4382258
               ]
             },
             {
@@ -45691,6 +46005,13 @@
             {
               "type": "primary",
               "coords": [
+                41.8953962,
+                12.438305
+              ]
+            },
+            {
+              "type": "primary",
+              "coords": [
                 41.8984454,
                 12.4426423
               ]
@@ -45999,8 +46320,8 @@
             {
               "type": "primary",
               "coords": [
-                41.8954498,
-                12.4382194
+                41.8954554,
+                12.4382258
               ]
             },
             {
@@ -46617,6 +46938,13 @@
               "coords": [
                 41.8953877,
                 12.4382962
+              ]
+            },
+            {
+              "type": "primary",
+              "coords": [
+                41.8953962,
+                12.438305
               ]
             },
             {
@@ -54244,6 +54572,13 @@
             {
               "type": "intersecting",
               "coords": [
+                41.9059813,
+                12.4376825
+              ]
+            },
+            {
+              "type": "intersecting",
+              "coords": [
                 41.901952,
                 12.4377418
               ]
@@ -54771,6 +55106,13 @@
               "coords": [
                 41.9059614,
                 12.4376012
+              ]
+            },
+            {
+              "type": "intersecting",
+              "coords": [
+                41.9059813,
+                12.4376825
               ]
             },
             {

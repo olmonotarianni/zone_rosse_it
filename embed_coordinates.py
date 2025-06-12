@@ -60,9 +60,77 @@ def find_intersection_point(primary_coords, intersecting_coords):
     
     return None
 
+def find_nearest_point_on_street(street_coords, reference_point):
+    """Find the nearest point on a street to a reference point"""
+    if not street_coords or not reference_point or not is_valid_coordinate(reference_point):
+        return None
+    
+    min_distance = float('inf')
+    nearest_point = None
+    nearest_index = -1
+    
+    for i, coord in enumerate(street_coords):
+        if is_valid_coordinate(coord):
+            distance = calculate_distance(coord, reference_point)
+            if distance < min_distance:
+                min_distance = distance
+                nearest_point = coord
+                nearest_index = i
+    
+    return {'point': nearest_point, 'index': nearest_index, 'distance': min_distance}
+
+def get_bounding_box(coord1, coord2):
+    """Get bounding box from two coordinates"""
+    lat1, lon1 = coord1
+    lat2, lon2 = coord2
+    
+    return {
+        'min_lat': min(lat1, lat2),
+        'max_lat': max(lat1, lat2),
+        'min_lon': min(lon1, lon2),
+        'max_lon': max(lon1, lon2)
+    }
+
+def is_point_in_bounding_box(point, bbox):
+    """Check if a point is within the bounding box"""
+    lat, lon = point
+    return (bbox['min_lat'] <= lat <= bbox['max_lat'] and 
+            bbox['min_lon'] <= lon <= bbox['max_lon'])
+
+def compute_street_tract(primary_coords, endpoint_coords_1, endpoint_coords_2):
+    """Compute the tract of a street between two endpoints"""
+    if not primary_coords or not endpoint_coords_1 or not endpoint_coords_2:
+        return primary_coords
+    
+    # Find nearest points on primary street to both endpoints
+    nearest_to_end1 = find_nearest_point_on_street(primary_coords, endpoint_coords_1[0] if endpoint_coords_1 else None)
+    nearest_to_end2 = find_nearest_point_on_street(primary_coords, endpoint_coords_2[0] if endpoint_coords_2 else None)
+    
+    if not nearest_to_end1 or not nearest_to_end2:
+        return primary_coords
+    
+    # Create bounding box from the two nearest points
+    bbox = get_bounding_box(nearest_to_end1['point'], nearest_to_end2['point'])
+    
+    # Filter street coordinates to only those within the bounding box
+    tract_coords = []
+    for coord in primary_coords:
+        if is_valid_coordinate(coord) and is_point_in_bounding_box(coord, bbox):
+            tract_coords.append(coord)
+    
+    # Always include the exact nearest points if they're not already in the tract
+    if nearest_to_end1['point'] not in tract_coords:
+        tract_coords.append(nearest_to_end1['point'])
+    if nearest_to_end2['point'] not in tract_coords:
+        tract_coords.append(nearest_to_end2['point'])
+    
+    return tract_coords if tract_coords else primary_coords
+
 def process_coordinates(coordinates_data):
-    """Process coordinates and calculate intersection points without losing original data"""
+    """Process coordinates and calculate intersection points and street tracts"""
     processed_count = 0
+    tract_count = 0
+    civic_count = 0
     
     for ord_id, ord_data in coordinates_data.items():
         for zone_name, zone_data in ord_data['zones'].items():
@@ -71,8 +139,26 @@ def process_coordinates(coordinates_data):
                 if not street_data:
                     continue
                     
-                if street_data.get('metadata', {}).get('type') == 'incrocio':
-                    # Extract coordinates
+                metadata_type = street_data.get('metadata', {}).get('type')
+                
+                if metadata_type == 'civico':
+                    # Handle civic numbers - use only special coordinates if available
+                    special_coords = street_data.get('special_coordinates', [])
+                    
+                    if special_coords:
+                        # Replace coordinates with only the civic number coordinates
+                        street_data['coordinates'] = [
+                            {'type': 'civic', 'coords': coord} for coord in special_coords
+                        ]
+                        street_data['metadata']['has_civic_coordinates'] = True
+                        street_data['metadata']['civic_count'] = len(special_coords)
+                        civic_count += 1
+                        print(f"✅ Using civic coordinates: {street_name} ({len(special_coords)} points)")
+                    else:
+                        print(f"⚠️ No civic coordinates found for: {street_name}")
+                
+                elif metadata_type == 'incrocio':
+                    # Handle intersections (existing logic)
                     primary_coords = []
                     intersecting_coords = []
                     
@@ -82,11 +168,9 @@ def process_coordinates(coordinates_data):
                         elif coord_entry.get('type') == 'intersecting' and is_valid_coordinate(coord_entry.get('coords')):
                             intersecting_coords.append(coord_entry['coords'])
                     
-                    # Calculate intersection point
                     intersection = find_intersection_point(primary_coords, intersecting_coords)
                     
                     if intersection:
-                        # Add intersection point to coordinates (don't replace, add)
                         street_data['coordinates'].append({
                             'type': 'intersection',
                             'coords': list(intersection)
@@ -96,9 +180,48 @@ def process_coordinates(coordinates_data):
                         print(f"✅ Calculated intersection: {street_name}")
                     else:
                         print(f"❌ Failed to calculate: {street_name}")
+                
+                elif metadata_type == 'tratto':
+                    # Handle street tracts
+                    primary_coords = []
+                    endpoint_coords_1 = []
+                    endpoint_coords_2 = []
+                    
+                    for coord_entry in street_data.get('coordinates', []):
+                        coord_type = coord_entry.get('type')
+                        coords = coord_entry.get('coords')
+                        
+                        if coord_type == 'primary' and is_valid_coordinate(coords):
+                            primary_coords.append(coords)
+                        elif coord_type == 'endpoint_1' and is_valid_coordinate(coords):
+                            endpoint_coords_1.append(coords)
+                        elif coord_type == 'endpoint_2' and is_valid_coordinate(coords):
+                            endpoint_coords_2.append(coords)
+                    
+                    if primary_coords and endpoint_coords_1 and endpoint_coords_2:
+                        # Compute the tract
+                        tract_coords = compute_street_tract(primary_coords, endpoint_coords_1, endpoint_coords_2)
+                        
+                        # Replace coordinates with tract coordinates
+                        street_data['coordinates'] = [
+                            {'type': 'tract', 'coords': coord} for coord in tract_coords
+                        ]
+                        street_data['metadata']['has_calculated_tract'] = True
+                        street_data['metadata']['original_primary_count'] = len(primary_coords)
+                        street_data['metadata']['tract_count'] = len(tract_coords)
+                        
+                        tract_count += 1
+                        print(f"✅ Calculated tract: {street_name} ({len(tract_coords)}/{len(primary_coords)} points)")
+                    else:
+                        missing = []
+                        if not primary_coords: missing.append("primary")
+                        if not endpoint_coords_1: missing.append("endpoint_1") 
+                        if not endpoint_coords_2: missing.append("endpoint_2")
+                        print(f"❌ Failed to calculate tract for {street_name}: missing {', '.join(missing)}")
     
-    print(f"🎯 Processed {processed_count} intersections")
+    print(f"🎯 Processed {processed_count} intersections, {tract_count} tracts, and {civic_count} civic numbers")
     return coordinates_data
+
 
 def embed_coordinates():
     """Embed coordinates into HTML viewer"""
@@ -174,6 +297,8 @@ def embed_coordinates():
     total_streets = 0
     streets_with_coords = 0
     intersections = 0
+    civic_numbers = 0
+    tracts = 0
     
     for ord_data in coordinates_data.values():
         for zone_data in ord_data['zones'].values():
@@ -183,11 +308,17 @@ def embed_coordinates():
                     streets_with_coords += 1
                     if street_data.get('metadata', {}).get('has_calculated_intersection'):
                         intersections += 1
+                    if street_data.get('metadata', {}).get('has_civic_coordinates'):
+                        civic_numbers += 1
+                    if street_data.get('metadata', {}).get('has_calculated_tract'):
+                        tracts += 1
         
     print(f"\n📊 Summary:")
     print(f"   📋 {total_ordinances} ordinances")
     print(f"   🏛️ {streets_with_coords}/{total_streets} streets with coordinates")
     print(f"   🎯 {intersections} calculated intersections")
+    print(f"   🏠 {civic_numbers} civic number coordinates")
+    print(f"   📏 {tracts} calculated tracts")
 
 if __name__ == "__main__":
     embed_coordinates()
