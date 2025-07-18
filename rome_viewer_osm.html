@@ -1,0 +1,1326 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Zone Rosse</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="viewer_style.css" />
+</head>
+<body>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="toggleSidebar()">
+                <h3 style="margin: 0;">Ordinanze</h3>
+                <span id="sidebar-toggle" class="sidebar-toggle">▼</span>
+            </div>
+            <div class="controls" id="sidebar-controls">
+                <button class="btn" onclick="toggleAllOrdinances()">Mostra tutte</button>
+                <button class="btn" onclick="fitToVisible()">Centra mappa</button>
+                <button class="btn secondary" onclick="toggleBboxPanel()">Config Zones</button>
+            </div>
+        </div>
+        <div class="sidebar-content" id="sidebar-content">
+            <div id="ordinances-list"></div>
+            <div class="stats" id="stats"></div>
+        </div>
+    </div>
+
+    <!-- Bbox Panel - moved to bottom-left -->
+    <div class="bbox-panel" id="bbox-panel" style="display: none;">
+        <div class="bbox-header">
+            <h4>🗺️ Config Zones</h4>
+            <button class="btn" onclick="toggleAllBboxes()">Toggle All</button>
+        </div>
+        <div id="bbox-list"></div>
+    </div>
+
+    <div id="map"></div>
+
+    <style>
+        .btn.secondary { background: #6c757d; }
+        .btn.secondary:hover { background: #545b62; }
+        
+        .bbox-panel {
+            position: fixed;
+            left: 20px;           /* Changed from right to left */
+            bottom: 20px;         /* Changed from top to bottom */
+            width: 280px;
+            max-height: 400px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            overflow-y: auto;
+            z-index: 1000;
+        }
+        
+        .bbox-header {
+            padding: 12px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .bbox-item {
+            padding: 8px 12px;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+        }
+        
+        .bbox-item:hover {
+            background: #f8f9fa;
+        }
+        
+        .bbox-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 3px;
+            margin-right: 8px;
+            border: 1px solid #666;
+        }
+        
+        .bbox-info {
+            display: flex;
+            align-items: center;
+            flex-grow: 1;
+        }
+        
+        .bbox-toggle {
+            padding: 4px 8px;
+            font-size: 11px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            background: #e9ecef;
+            color: #495057;
+        }
+        
+        .bbox-toggle.active {
+            background: #28a745;
+            color: white;
+        }
+    </style>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        const map = L.map('map').setView([41.9028, 12.4964], 12);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        let coordinatesData = {};
+        let allLayers = [];
+        let visibleLayers = [];
+        let ordinanceGroups = {};
+        let streetLayers = {};
+        let bboxLayers = {};
+
+        // City configs with exact coordinates from coordinates_fetcher.py
+        const cityConfigs = {
+            rome: {
+                name: "Rome",
+                default_bbox: [41.8, 12.4, 42.0, 12.6],
+                zone_bboxes: {
+                    'esquilino': [41.888, 12.495, 41.905, 12.52],
+                    'tuscolano': [41.85, 12.512, 41.883, 12.56], 
+                    'valle_aurelia': [41.889, 12.41, 41.925, 12.46]
+                },
+                colors: {
+                    'default': '#95a5a6',
+                    'esquilino': '#e74c3c',
+                    'tuscolano': '#3498db',
+                    'valle_aurelia': '#2ecc71'
+                }
+            },
+            milan: {
+                name: "Milan",
+                default_bbox: [45.40, 9.05, 45.55, 9.35],
+                zone_bboxes: {
+                    'zona_duomo': [45.460, 9.175, 45.470, 9.205],
+                    'navigli': [45.440, 9.160, 45.460, 9.190],
+                    'stazione_centrale': [45.468, 9.192, 45.494, 9.215],
+                    'stazione_porta_garibaldi': [45.475, 9.178, 45.495, 9.198],
+                    'stazione_rogoredo': [45.425, 9.210, 45.445, 9.250],
+                },
+                colors: {
+                    'default': '#95a5a6',
+                    'zona_duomo': '#9b59b6',
+                    'darsena_e_navigli': '#1abc9c',
+                    'navigli': '#16a085',
+                    'stazione_centrale': '#e67e22',
+                    'stazione_porta_garibaldi': '#f39c12',
+                    'stazione_rogoredo': '#d35400',
+                }
+            }
+        };
+
+        coordinatesData = await fetch('./coordinates_osm.json').then(response => response.json());
+
+        // Bbox functions
+        function createBboxLayer(name, bbox, color, cityName) {
+            const [south, west, north, east] = bbox;
+            const bounds = [[south, west], [north, east]];
+            
+            return L.rectangle(bounds, {
+                color: color,
+                weight: 2,
+                opacity: 0.8,
+                fillColor: color,
+                fillOpacity: 0.1,
+                dashArray: '5, 5'
+            }).bindPopup(`<strong>${cityName}: ${name}</strong><br>Bbox: ${south.toFixed(4)}, ${west.toFixed(4)}<br>to ${north.toFixed(4)}, ${east.toFixed(4)}`);
+        }
+
+        function initializeBboxes() {
+            Object.entries(cityConfigs).forEach(([cityKey, config]) => {
+                // Default bbox
+                const defaultKey = `${cityKey}_default`;
+                bboxLayers[defaultKey] = createBboxLayer(
+                    'Default', 
+                    config.default_bbox, 
+                    config.colors.default, 
+                    config.name
+                );
+                
+                // Zone bboxes
+                Object.entries(config.zone_bboxes).forEach(([zoneName, bbox]) => {
+                    const key = `${cityKey}_${zoneName}`;
+                    const color = config.colors[zoneName] || config.colors.default;
+                    bboxLayers[key] = createBboxLayer(zoneName, bbox, color, config.name);
+                });
+            });
+        }
+
+        function buildBboxList() {
+            const bboxList = document.getElementById('bbox-list');
+            bboxList.innerHTML = '';
+            
+            Object.entries(cityConfigs).forEach(([cityKey, config]) => {
+                // City header
+                const cityHeader = document.createElement('div');
+                cityHeader.style.cssText = 'padding: 8px 12px; background: #e9ecef; font-weight: bold; font-size: 12px;';
+                cityHeader.textContent = config.name;
+                bboxList.appendChild(cityHeader);
+                
+                // Default bbox
+                const defaultItem = document.createElement('div');
+                defaultItem.className = 'bbox-item';
+                defaultItem.innerHTML = `
+                    <div class="bbox-info">
+                        <div class="bbox-color" style="background-color: ${config.colors.default}"></div>
+                        <span>Default</span>
+                    </div>
+                    <button class="bbox-toggle" onclick="toggleBbox('${cityKey}_default')">Show</button>
+                `;
+                bboxList.appendChild(defaultItem);
+                
+                // Zone bboxes
+                Object.keys(config.zone_bboxes).forEach(zoneName => {
+                    const color = config.colors[zoneName] || config.colors.default;
+                    const item = document.createElement('div');
+                    item.className = 'bbox-item';
+                    item.innerHTML = `
+                        <div class="bbox-info">
+                            <div class="bbox-color" style="background-color: ${color}"></div>
+                            <span>${zoneName.replace(/_/g, ' ')}</span>
+                        </div>
+                        <button class="bbox-toggle" onclick="toggleBbox('${cityKey}_${zoneName}')">Show</button>
+                    `;
+                    bboxList.appendChild(item);
+                });
+            });
+        }
+
+        function toggleBbox(key) {
+            const layer = bboxLayers[key];
+            const button = event.target;
+            
+            if (map.hasLayer(layer)) {
+                map.removeLayer(layer);
+                button.textContent = 'Show';
+                button.classList.remove('active');
+            } else {
+                map.addLayer(layer);
+                button.textContent = 'Hide';
+                button.classList.add('active');
+            }
+        }
+
+        function toggleAllBboxes() {
+            const buttons = document.querySelectorAll('.bbox-toggle');
+            const anyActive = Array.from(buttons).some(btn => btn.classList.contains('active'));
+            
+            buttons.forEach(btn => {
+                const key = btn.getAttribute('onclick').match(/'([^']+)'/)[1];
+                const layer = bboxLayers[key];
+                
+                if (anyActive) {
+                    if (map.hasLayer(layer)) {
+                        map.removeLayer(layer);
+                        btn.textContent = 'Show';
+                        btn.classList.remove('active');
+                    }
+                } else {
+                    if (!map.hasLayer(layer)) {
+                        map.addLayer(layer);
+                        btn.textContent = 'Hide';
+                        btn.classList.add('active');
+                    }
+                }
+            });
+        }
+
+        function toggleBboxPanel() {
+            const panel = document.getElementById('bbox-panel');
+            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+        }
+
+        // Original functions (keeping existing functionality)
+        function calculatePolygonArea(coordinates) {
+            let area = 0;
+            const n = coordinates.length;
+
+            for (let i = 0; i < n; i++) {
+                const j = (i + 1) % n;
+                area += coordinates[i][1] * coordinates[j][0];
+                area -= coordinates[j][1] * coordinates[i][0];
+            }
+
+            return Math.abs(area) / 2;
+        }
+
+        function isClosedGeometry(geometry) {
+            if (!geometry.coordinates || geometry.coordinates.length < 3) return false;
+
+            const coords = geometry.coordinates;
+            const first = coords[0];
+            const last = coords[coords.length - 1];
+
+            return Math.abs(first[0] - last[0]) < 0.0000001 && Math.abs(first[1] - last[1]) < 0.0000001;
+        }
+
+        function getBoundingBoxArea(coordinates) {
+            let minLat = Infinity, maxLat = -Infinity;
+            let minLon = Infinity, maxLon = -Infinity;
+
+            coordinates.forEach(coord => {
+                minLat = Math.min(minLat, coord[0]);
+                maxLat = Math.max(maxLat, coord[0]);
+                minLon = Math.min(minLon, coord[1]);
+                maxLon = Math.max(maxLon, coord[1]);
+            });
+
+            return (maxLat - minLat) * (maxLon - minLon);
+        }
+
+        function removeDuplicateGeometries(geometries) {
+            const unique = [];
+            const seen = new Set();
+            
+            geometries.forEach(geom => {
+                const coordsString = JSON.stringify(geom.coordinates);
+                if (!seen.has(coordsString)) {
+                    seen.add(coordsString);
+                    unique.push(geom);
+                } else {
+                    console.log('🔄 Removed duplicate geometry');
+                }
+            });
+            
+            console.log(`📊 Duplicates removed: ${geometries.length} → ${unique.length} geometries`);
+            return unique;
+        }
+
+        // 2. NEW: Merge polygon fragments
+        function mergePolygonFragments(geometries) {
+            const polygons = geometries.filter(g => g.type === 'Polygon');
+            const others = geometries.filter(g => g.type !== 'Polygon');
+            
+            if (polygons.length <= 1) {
+                return geometries;
+            }
+            
+            console.log(`🔧 Attempting to merge ${polygons.length} polygon fragments`);
+            
+            // Collect all unique boundary points
+            const allPoints = [];
+            const pointSet = new Set();
+            
+            polygons.forEach(polygon => {
+                const coords = polygon.coordinates[0];
+                coords.forEach(coord => {
+                    const pointKey = `${coord[0].toFixed(7)},${coord[1].toFixed(7)}`;
+                    if (!pointSet.has(pointKey)) {
+                        pointSet.add(pointKey);
+                        allPoints.push(coord);
+                    }
+                });
+            });
+            
+            if (allPoints.length < 3) {
+                console.warn('⚠️ Not enough unique points for merged polygon');
+                return geometries;
+            }
+            
+            // Order points to form a proper polygon boundary
+            try {
+                // Calculate centroid
+                const centerLat = allPoints.reduce((sum, p) => sum + p[0], 0) / allPoints.length;
+                const centerLon = allPoints.reduce((sum, p) => sum + p[1], 0) / allPoints.length;
+                
+                // Sort points by angle from center
+                const orderedPoints = allPoints.sort((a, b) => {
+                    const angleA = Math.atan2(a[1] - centerLon, a[0] - centerLat);
+                    const angleB = Math.atan2(b[1] - centerLon, b[0] - centerLat);
+                    return angleA - angleB;
+                });
+                
+                // Close the polygon
+                if (orderedPoints.length > 0) {
+                    const first = orderedPoints[0];
+                    const last = orderedPoints[orderedPoints.length - 1];
+                    if (Math.abs(first[0] - last[0]) > 0.00001 || Math.abs(first[1] - last[1]) > 0.00001) {
+                        orderedPoints.push(orderedPoints[0]);
+                    }
+                }
+                
+                const mergedPolygon = {
+                    type: 'Polygon',
+                    coordinates: [orderedPoints],
+                    mergedFromFragments: polygons.length
+                };
+                
+                console.log(`✅ Successfully merged into polygon with ${orderedPoints.length} points`);
+                return [mergedPolygon, ...others];
+                
+            } catch (error) {
+                console.error('❌ Failed to merge polygon fragments:', error);
+                return geometries;
+            }
+        }
+
+        function findOuterBoundarySmartMerging(geometries) {
+            console.log(`🔍 Finding outer boundary from ${geometries.length} geometries`);
+            
+            // First remove duplicates
+            const uniqueGeometries = removeDuplicateGeometries(geometries);
+            
+            const closedGeometries = uniqueGeometries.filter(g => 
+                (g.type === 'Polygon' || isClosedGeometry(g)) && 
+                g.coordinates && g.coordinates.length > 0
+            );
+
+            console.log(`🔍 Found ${closedGeometries.length} closed geometries`);
+
+            if (closedGeometries.length === 0) return null;
+            if (closedGeometries.length === 1) return closedGeometries[0];
+
+            // For multiple polygons, analyze them carefully
+            const polygons = closedGeometries.filter(g => g.type === 'Polygon');
+            
+            if (polygons.length > 1) {
+                console.log(`🔧 Analyzing ${polygons.length} polygons for potential merging`);
+                
+                // Calculate bounding box areas (more reliable for geographic coordinates)
+                const polygonData = polygons.map((geom, index) => {
+                    const coords = geom.coordinates[0];
+                    const bboxArea = getBoundingBoxArea(coords);
+                    const pointCount = coords.length;
+                    return {
+                        geometry: geom,
+                        index: index,
+                        bboxArea: bboxArea,
+                        pointCount: pointCount,
+                        coords: coords
+                    };
+                });
+                
+                // Sort by area (largest first)
+                polygonData.sort((a, b) => b.bboxArea - a.bboxArea);
+                
+                const largest = polygonData[0];
+                const smallest = polygonData[polygonData.length - 1];
+                const areas = polygonData.map(p => p.bboxArea);
+                const avgArea = areas.reduce((sum, area) => sum + area, 0) / areas.length;
+                
+                console.log(`📊 Polygon analysis:`);
+                console.log(`   - Largest area: ${largest.bboxArea.toFixed(10)} (${largest.pointCount} points)`);
+                console.log(`   - Smallest area: ${smallest.bboxArea.toFixed(10)} (${smallest.pointCount} points)`);
+                console.log(`   - Average area: ${avgArea.toFixed(10)}`);
+                console.log(`   - Size ratio: ${(largest.bboxArea / smallest.bboxArea).toFixed(2)}`);
+                
+                const sizeRatio = largest.bboxArea / smallest.bboxArea;
+                
+                // SMART DECISION LOGIC:
+                
+                // Case 1: One polygon is much larger than others (main square + decorative elements)
+                // Don't merge - just use the largest
+                if (sizeRatio > 30) {
+                    console.log(`🏛️ Large main polygon detected (${sizeRatio.toFixed(1)}x larger) - using largest only`);
+                    return largest.geometry;
+                }
+                
+                // Case 2: All polygons are very small AND similar size (fragments)
+                // Merge them together
+                if (largest.bboxArea < 0.0001 && sizeRatio < 5) {
+                    console.log(`🔧 Small similar-sized fragments detected - merging`);
+                    const merged = mergePolygonFragments(closedGeometries);
+                    if (merged.length > 0 && merged[0].type === 'Polygon') {
+                        console.log('✅ Successfully merged fragments');
+                        return merged[0];
+                    }
+                }
+                
+                // Case 3: Mixed sizes but not extreme - check for fragment patterns
+                if (sizeRatio < 10 && polygons.length >= 3) {
+                    // Check if most polygons are small and similar
+                    const smallPolygons = polygonData.filter(p => p.bboxArea < avgArea * 2);
+                    const smallRatio = smallPolygons.length / polygonData.length;
+                    
+                    if (smallRatio > 0.7) { // 70%+ are small and similar
+                        console.log(`🔧 Fragment pattern detected (${smallPolygons.length}/${polygonData.length} small) - merging`);
+                        const merged = mergePolygonFragments(closedGeometries);
+                        if (merged.length > 0 && merged[0].type === 'Polygon') {
+                            console.log('✅ Successfully merged fragments');
+                            return merged[0];
+                        }
+                    }
+                }
+                
+                // Default: Use largest polygon
+                console.log(`📐 Using largest polygon (no merging needed)`);
+                return largest.geometry;
+            }
+
+            // Fallback to original logic for non-polygons
+            console.log('📐 Using fallback: selecting largest geometry');
+            let largestGeometry = null;
+            let largestArea = 0;
+
+            closedGeometries.forEach(geometry => {
+                let coords;
+                if (geometry.type === 'Polygon') {
+                    coords = geometry.coordinates[0];
+                } else {
+                    coords = geometry.coordinates;
+                }
+
+                const area = getBoundingBoxArea(coords);
+
+                if (area > largestArea) {
+                    largestArea = area;
+                    largestGeometry = geometry;
+                }
+            });
+
+            return largestGeometry;
+        }
+
+        // DEBUGGING: Function to analyze what's happening with Vittorio Emanuele
+        function debugSquareGeometry(streetName, geometries) {
+            if (!streetName.toLowerCase().includes('vittorio') && !streetName.toLowerCase().includes('manfredo')) {
+                return; // Only debug these specific squares
+            }
+            
+            console.log(`\n🔍 === DEBUGGING ${streetName} ===`);
+            console.log(`Total geometries: ${geometries.length}`);
+            
+            const polygons = geometries.filter(g => g.type === 'Polygon');
+            console.log(`Polygons: ${polygons.length}`);
+            
+            polygons.forEach((polygon, index) => {
+                const coords = polygon.coordinates[0];
+                const bboxArea = getBoundingBoxArea(coords);
+                const pointCount = coords.length;
+                
+                console.log(`  Polygon ${index + 1}: ${pointCount} points, area: ${bboxArea.toFixed(10)}`);
+                
+                // Show first few coordinates
+                const firstCoords = coords.slice(0, 3).map(c => `[${c[0].toFixed(6)}, ${c[1].toFixed(6)}]`).join(', ');
+                console.log(`    First coords: ${firstCoords}...`);
+            });
+            
+            console.log(`=== END DEBUG ${streetName} ===\n`);
+        }
+
+
+        // UPDATED: Enhanced square creation with debugging
+        function createSquarePolygon(geometries, metadata, streetName, ordId, zoneName) {
+            console.log(`🏛️ Creating square polygon for: ${streetName} with ${geometries.length} geometries`);
+            
+            // Debug specific squares
+            debugSquareGeometry(streetName, geometries);
+            
+            const outerBoundary = findOuterBoundarySmartMerging(geometries);
+            if (!outerBoundary) {
+                console.warn(`❌ No boundary found for square: ${streetName}`);
+                return null;
+            }
+
+            let coords;
+            if (outerBoundary.type === 'Polygon') {
+                coords = outerBoundary.coordinates[0];
+            } else {
+                coords = outerBoundary.coordinates;
+            }
+
+            // Validate coordinates
+            if (!coords || coords.length < 3) {
+                console.warn(`❌ Invalid coordinates for square: ${streetName}`);
+                return null;
+            }
+
+            console.log(`✅ Creating polygon for ${streetName} with ${coords.length} points`);
+            const latLngs = coords.map(coord => [coord[0], coord[1]]);
+
+            const layer = L.polygon(latLngs, {
+                color: '#dc3545',
+                fillColor: '#dc3545',
+                weight: 3,
+                opacity: 0.8,
+                fillOpacity: 0.3,
+                smoothFactor: 0.5
+            });
+
+            layer.ordId = ordId;
+            layer.zoneName = zoneName;
+            layer.streetName = streetName;
+            layer.specType = metadata.type;
+            layer.isSquareArea = true;
+            layer.geometryType = 'Square/Area';
+
+            // Add debug info
+            let popupContent = createStandardPopup(streetName, zoneName, ordId);
+            if (outerBoundary.mergedFromFragments) {
+                popupContent += `<br><em>🔧 Merged from ${outerBoundary.mergedFromFragments} fragments</em>`;
+                console.log(`🔧 ${streetName} was merged from ${outerBoundary.mergedFromFragments} fragments`);
+            } else {
+                popupContent += `<br><em>📐 Used largest polygon (${coords.length} points)</em>`;
+            }
+            
+            layer.bindPopup(popupContent);
+            return layer;
+        }
+
+
+
+        // 5. UPDATED: Enhanced street geometry processing
+        function processStreetGeometries(streetData, streetName, ordId, zoneName) {
+            const layers = [];
+
+            if (!streetData || (!streetData.geometries?.length && !streetData.special_coordinates?.length && !streetData.coordinates?.length)) {
+                console.log(`⚠️ No data for ${streetName}`);
+                return layers;
+            }
+
+            const metadata = streetData.metadata || {};
+            const isCivic = metadata.type === 'civic' || streetName.includes('civico');
+
+            console.log(`🔍 Processing ${streetName}: type=${metadata.type}, civic=${isCivic}`);
+
+            // CIVIC ADDRESS HANDLING
+            if (isCivic) {
+                console.log(`🏠 Processing civic address: ${streetName}`);
+                
+                let civicPoint = null;
+                
+                // Method 1: Check geometries for Point type
+                if (streetData.geometries && streetData.geometries.length > 0) {
+                    console.log(`📍 Checking ${streetData.geometries.length} geometries for civic point`);
+                    for (const geom of streetData.geometries) {
+                        if (geom.type === 'Point' && geom.coordinates && geom.coordinates.length >= 2) {
+                            civicPoint = geom.coordinates;
+                            console.log(`✅ Found civic point in geometries: [${civicPoint[0]}, ${civicPoint[1]}]`);
+                            break;
+                        }
+                    }
+                }
+                
+                // Method 2: Check special_coordinates 
+                if (!civicPoint && streetData.special_coordinates && streetData.special_coordinates.length > 0) {
+                    console.log(`⭐ Checking ${streetData.special_coordinates.length} special coordinates for civic point`);
+                    for (const special of streetData.special_coordinates) {
+                        if (special.type === 'Point' && special.coordinates && special.coordinates.length >= 2) {
+                            civicPoint = special.coordinates;
+                            console.log(`✅ Found civic point in special_coordinates: [${civicPoint[0]}, ${civicPoint[1]}]`);
+                            break;
+                        }
+                    }
+                }
+                
+                // Method 3: Check old format coordinates array
+                if (!civicPoint && streetData.coordinates && streetData.coordinates.length > 0) {
+                    console.log(`📊 Checking ${streetData.coordinates.length} old format coordinates for civic point`);
+                    for (const coord of streetData.coordinates) {
+                        if (Array.isArray(coord) && coord.length >= 2) {
+                            civicPoint = coord;
+                            console.log(`✅ Found civic point in coordinates array: [${civicPoint[0]}, ${civicPoint[1]}]`);
+                            break;
+                        }
+                    }
+                }
+                
+                // Create civic marker if we found coordinates
+                if (civicPoint) {
+                    try {
+                        const [lat, lon] = civicPoint;
+                        console.log(`🎯 Creating civic marker at [${lat}, ${lon}]`);
+                        
+                        const marker = L.circle([lat, lon], {
+                            radius: 30,
+                            fillColor: '#dc3545',
+                            color: '#dc3545',
+                            weight: 2,
+                            opacity: 0.8,
+                            fillOpacity: 0.6
+                        });
+
+                        marker.ordId = ordId;
+                        marker.zoneName = zoneName;
+                        marker.streetName = streetName;
+                        marker.isCivic = true;
+                        marker.geometryType = 'Civic Point';
+
+                        marker.bindPopup(createStandardPopup(streetName, zoneName, ordId) + 
+                                    `<br><em>🏠 Civic Address</em><br><em>📍 [${lat.toFixed(6)}, ${lon.toFixed(6)}]</em>`);
+
+                        layers.push(marker);
+                        console.log(`✅ Civic marker created successfully for ${streetName}`);
+                        return layers;
+                        
+                    } catch (error) {
+                        console.error(`❌ Failed to create civic marker for ${streetName}:`, error);
+                    }
+                } else {
+                    console.warn(`⚠️ No valid coordinates found for civic address: ${streetName}`);
+                    console.log("   Geometry data:", streetData.geometries);
+                    console.log("   Special data:", streetData.special_coordinates);
+                    console.log("   Coordinates data:", streetData.coordinates);
+                }
+            }
+
+            // NON-CIVIC PROCESSING (existing logic)
+            const geometries = streetData.geometries || [];
+            
+            if (geometries.length === 0) {
+                console.log(`⚠️ No geometries for non-civic: ${streetName}`);
+                return layers;
+            }
+
+            const closedGeometries = geometries.filter(g => 
+                g.type === 'Polygon' || isClosedGeometry(g)
+            );
+
+            // Detect if this should be treated as a square
+            const isSquare = metadata.type === 'square' || 
+                            streetName.toLowerCase().includes('piazza') ||
+                            streetName.toLowerCase().includes('piazzale') ||
+                            streetName.toLowerCase().includes('largo');
+
+            if (isSquare && closedGeometries.length >= 1) {
+                console.log(`🏛️ Treating ${streetName} as square with ${geometries.length} geometries`);
+                const squareLayer = createSquarePolygon(geometries, metadata, streetName, ordId, zoneName);
+                if (squareLayer) {
+                    layers.push(squareLayer);
+                } else {
+                    console.warn(`⚠️ Failed to create square layer for ${streetName}`);
+                }
+            } else {
+                console.log(`🛣️ Treating ${streetName} as street with individual geometries`);
+                geometries.forEach((geometry, index) => {
+                    const layer = createPolyline(geometry, metadata, streetName, ordId, zoneName);
+                    if (layer) {
+                        layers.push(layer);
+                    } else {
+                        console.warn(`⚠️ Failed to create layer for geometry ${index} of ${streetName}`);
+                    }
+                });
+            }
+
+            return layers;
+        }
+   
+        function createStandardPopup(streetName, zoneName, ordId) {
+            const ordData = coordinatesData[ordId];
+            const protocol = ordData?.metadata?.protocol || ordId;
+            const date = ordData?.metadata?.date || '';
+            const ordinanceTitle = `Prot. n. ${protocol}${date ? ` (${date})` : ''}`;
+            
+            return `<strong>${streetName}</strong><br><em>Zona:</em> ${zoneName}<br><em>Ordinanza:</em> ${ordinanceTitle}`;
+        }
+
+        function createPolyline(geometry, metadata, streetName, ordId, zoneName) {
+            if (!geometry || !geometry.coordinates || geometry.coordinates.length < 2) {
+                return null;
+            }
+
+            const specType = metadata.type;
+            const streetType = geometry.street_type || 'primary';
+
+            let layer;
+
+            if (geometry.type === 'Polygon') {
+                const outerRing = geometry.coordinates[0];
+                const latLngs = outerRing.map(coord => [coord[0], coord[1]]);
+
+                layer = L.polygon(latLngs, {
+                    color: '#dc3545',
+                    fillColor: '#dc3545',
+                    weight: 3,
+                    opacity: 0.8,
+                    fillOpacity: 0.3,
+                    smoothFactor: 0.5
+                });
+            } else {
+                const latLngs = geometry.coordinates.map(coord => [coord[0], coord[1]]);
+
+                layer = L.polyline(latLngs, {
+                    color: '#dc3545',
+                    weight: 6,
+                    opacity: 0.7
+                });
+            }
+
+            layer.ordId = ordId;
+            layer.zoneName = zoneName;
+            layer.streetName = streetName;
+            layer.specType = specType;
+            layer.streetType = streetType;
+            layer.geometryType = geometry.type;
+
+            layer.bindPopup(createStandardPopup(streetName, zoneName, ordId));
+            return layer;
+        }
+
+        function createSpecialMarker(special, metadata, streetName, ordId, zoneName) {
+            if (!special || special.type !== 'Point' || !special.coordinates) {
+                return null;
+            }
+
+            const [lat, lon] = special.coordinates;
+
+            const marker = L.circle([lat, lon], {
+                radius: 30,
+                fillColor: '#dc3545',
+                color: '#dc3545',
+                weight: 2,
+                opacity: 0.8,
+                fillOpacity: 0.4
+            });
+
+            marker.ordId = ordId;
+            marker.zoneName = zoneName;
+            marker.streetName = streetName;
+            marker.isSpecial = true;
+
+            marker.bindPopup(createStandardPopup(streetName, zoneName, ordId));
+            return marker;
+        }
+
+        function loadCoordinates() {
+            let totalStreets = 0;
+            let streetsWithGeometry = 0;
+            let intersectionCount = 0;
+            let tractCount = 0;
+            let civicCount = 0;
+            let totalGeometries = 0;
+            let specialCount = 0;
+            let squareCount = 0;
+
+            for (const [ordId, ordData] of Object.entries(coordinatesData)) {
+                if (!ordinanceGroups[ordId]) {
+                    ordinanceGroups[ordId] = {};
+                }
+
+                for (const [zoneName, streets] of Object.entries(ordData.zones)) {
+                    if (!ordinanceGroups[ordId][zoneName]) {
+                        ordinanceGroups[ordId][zoneName] = L.layerGroup();
+                    }
+
+                    for (const [streetName, streetData] of Object.entries(streets)) {
+                        totalStreets++;
+
+                        const streetKey = `${ordId}-${zoneName}-${streetName}`;
+                        streetLayers[streetKey] = [];
+
+                        if (streetData) {
+                            const hasGeometries = streetData.geometries && streetData.geometries.length > 0;
+                            const hasSpecialCoords = streetData.special_coordinates && streetData.special_coordinates.length > 0;
+
+                            if (hasGeometries || hasSpecialCoords) {
+                                streetsWithGeometry++;
+
+                                const specType = streetData.metadata?.type;
+                                if (specType === 'incrocio') intersectionCount++;
+                                if (specType === 'tratto') tractCount++;
+                                if (specType === 'civico') civicCount++;
+
+                                if (hasGeometries) {
+                                    const layers = processStreetGeometries(streetData, streetName, ordId, zoneName);
+
+                                    layers.forEach(layer => {
+                                        ordinanceGroups[ordId][zoneName].addLayer(layer);
+                                        allLayers.push(layer);
+                                        streetLayers[streetKey].push(layer);
+
+                                        if (layer.isSquareArea) {
+                                            squareCount++;
+                                        }
+                                    });
+
+                                    totalGeometries += streetData.geometries.length;
+                                }
+
+                                if (hasSpecialCoords) {
+                                    streetData.special_coordinates.forEach((special) => {
+                                        const marker = createSpecialMarker(special, streetData.metadata, streetName, ordId, zoneName);
+                                        if (marker) {
+                                            ordinanceGroups[ordId][zoneName].addLayer(marker);
+                                            allLayers.push(marker);
+                                            streetLayers[streetKey].push(marker);
+                                            specialCount++;
+                                        }
+                                    });
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            buildSidebar(totalStreets, streetsWithGeometry, intersectionCount, tractCount, civicCount, totalGeometries, specialCount, squareCount);
+            hierarchicalController.initialize();
+        }
+
+        function buildSidebar(totalStreets, streetsWithGeometry, intersectionCount, tractCount, civicCount, totalGeometries, specialCount, squareCount) {
+            const ordinancesList = document.getElementById('ordinances-list');
+            ordinancesList.innerHTML = '';
+
+            for (const [ordId, ordData] of Object.entries(coordinatesData)) {
+                const ordDiv = document.createElement('div');
+                ordDiv.className = 'ordinance-group';
+
+                const protocol = ordData.metadata?.protocol || ordId;
+                const date = ordData.metadata?.date || '';
+                const ordinanceTitle = `Prot. n. ${protocol}${date ? ` (${date})` : ''}`;
+
+                const ordHeader = document.createElement('div');
+                ordHeader.className = 'ordinance-header';
+                ordHeader.innerHTML = `
+                    <span class="ordinance-title">${ordinanceTitle}</span>
+                    <button class="toggle-btn" data-ord="${ordId}">●</button>
+                `;
+
+                const ordContent = document.createElement('div');
+                ordContent.className = 'ordinance-content';
+                ordContent.id = `ord-${ordId}`;
+
+                for (const [zoneName, streets] of Object.entries(ordData.zones)) {
+                    const zoneDiv = document.createElement('div');
+                    zoneDiv.className = 'zone-group';
+
+                    const zoneHeader = document.createElement('div');
+                    zoneHeader.className = 'zone-header';
+                    zoneHeader.innerHTML = `
+                        <span class="zone-title">${zoneName}</span>
+                        <button class="toggle-btn" data-zone="${ordId}-${zoneName}">●</button>
+                    `;
+
+                    const zoneContent = document.createElement('div');
+                    zoneContent.className = 'zone-content';
+                    zoneContent.id = `zone-${ordId}-${zoneName}`;
+
+                    for (const [streetName, streetData] of Object.entries(streets)) {
+                        const streetDiv = document.createElement('div');
+                        const hasGeometry = streetData && streetData.geometries && streetData.geometries.length > 0;
+                        const hasSpecialCoords = streetData && streetData.special_coordinates && streetData.special_coordinates.length > 0;
+                        const specType = streetData?.metadata?.type;
+                        const displayMode = streetData?.metadata?.display_mode || 'normal';
+                        const isComplete = streetData?.metadata?.intersection_complete !== false && 
+                                         streetData?.metadata?.tract_complete !== false;
+
+                        const isCleanSquare = hasGeometry && streetData.geometries.length > 1 && 
+                                            streetData.geometries.some(g => g.type === 'Polygon' || isClosedGeometry(g));
+
+                        let streetClass = 'street-item';
+                        let displayIcon = '';
+
+                        if (hasGeometry || hasSpecialCoords) {
+                            if (isCleanSquare) {
+                                streetClass += ' square-area';
+                                displayIcon = ' 🏛️';
+                            } else if (specType === 'incrocio') {
+                                if (displayMode === 'intersection_only') {
+                                    streetClass += ' intersection-point';
+                                    displayIcon = ' 🎯';
+                                } else {
+                                    streetClass += isComplete ? ' intersection' : ' intersection-incomplete';
+                                }
+                            } else if (specType === 'civico') {
+                                if (displayMode === 'civic_only') {
+                                    streetClass += ' civic-point';
+                                    displayIcon = ' 🏠';
+                                } else {
+                                    streetClass += ' civic';
+                                }
+                            } else if (specType === 'tratto') {
+                                if (displayMode === 'tract_only') {
+                                    streetClass += ' tract-filtered';
+                                    displayIcon = ' 📏';
+                                } else {
+                                    streetClass += isComplete ? ' tract' : ' tract-incomplete';
+                                }
+                            } else {
+                                streetClass += ' has-geometry';
+                            }
+                        } else {
+                            streetClass += ' no-geometry';
+                        }
+
+                        let validationIcon = '';
+                        if (specType === 'incrocio' || specType === 'tratto') {
+                            if (isComplete) {
+                                validationIcon = ' ✓';
+                            } else {
+                                validationIcon = ' ⚠';
+                            }
+                        }
+
+                        streetDiv.className = streetClass;
+                        streetDiv.innerHTML = `
+                            <span class="street-name">${streetName}${displayIcon}${validationIcon}</span>
+                            <button class="toggle-btn" data-street="${ordId}-${zoneName}-${streetName}">●</button>
+                        `;
+                        zoneContent.appendChild(streetDiv);
+                    }
+
+                    zoneDiv.appendChild(zoneHeader);
+                    zoneDiv.appendChild(zoneContent);
+                    ordContent.appendChild(zoneDiv);
+                }
+
+                ordDiv.appendChild(ordHeader);
+                ordDiv.appendChild(ordContent);
+                ordinancesList.appendChild(ordDiv);
+            }
+
+            document.getElementById('stats').innerHTML = `
+                <strong>Statistics (OSM):</strong><br>
+                📋 ${Object.keys(coordinatesData).length} ordinances<br>
+                🏛️ ${streetsWithGeometry}/${totalStreets} streets with geometries<br>
+                📏 ${totalGeometries} total geometries<br>
+                🎯 ${intersectionCount} intersections<br>
+                🏠 ${civicCount} civic specifications<br>
+                📐 ${tractCount} tract specifications<br>
+                ⭐ ${specialCount} special coordinates<br>
+                🏛️ ${squareCount} clean filled squares
+            `;
+
+            addEventListeners();
+        }
+
+        // ===== HIERARCHICAL BUTTON CONTROLLER =====
+        class HierarchicalController {
+            constructor() {
+                this.hierarchy = [
+                    {
+                        selector: '.btn[onclick="toggleAllOrdinances()"]',
+                        type: 'main',
+                        children: '[data-ord]'
+                    },
+                    {
+                        selector: '[data-ord]',
+                        type: 'ordinance',
+                        children: btn => `[data-zone^="${btn.dataset.ord}-"]`,
+                        parent: '.btn[onclick="toggleAllOrdinances()"]'
+                    },
+                    {
+                        selector: '[data-zone]',
+                        type: 'zone',
+                        children: btn => `[data-street^="${btn.dataset.zone}-"]`,
+                        parent: btn => {
+                            const ordId = btn.dataset.zone.split('-')[0];
+                            return `[data-ord="${ordId}"]`;
+                        }
+                    },
+                    {
+                        selector: '[data-street]',
+                        type: 'street',
+                        parent: btn => {
+                            const parts = btn.dataset.street.split('-');
+                            const zoneId = parts.slice(0, -1).join('-');
+                            return `[data-zone="${zoneId}"]`;
+                        }
+                    }
+                ];
+            }
+
+            getHierarchyLevel(button) {
+                return this.hierarchy.find(level => {
+                    if (level.selector.includes('onclick')) {
+                        return button.getAttribute('onclick') === 'toggleAllOrdinances()';
+                    }
+                    return button.matches(level.selector);
+                });
+            }
+
+            getChildren(button) {
+                const level = this.getHierarchyLevel(button);
+                if (!level || !level.children) return [];
+
+                const selector = typeof level.children === 'function' 
+                    ? level.children(button) 
+                    : level.children;
+                
+                return Array.from(document.querySelectorAll(selector));
+            }
+
+            getParent(button) {
+                const level = this.getHierarchyLevel(button);
+                if (!level || !level.parent) return null;
+
+                const selector = typeof level.parent === 'function'
+                    ? level.parent(button)
+                    : level.parent;
+
+                return document.querySelector(selector);
+            }
+
+            areAllChildrenActive(button) {
+                const children = this.getChildren(button);
+                return children.length > 0 && children.every(child => child.classList.contains('active'));
+            }
+
+            setButtonState(button, isActive) {
+                if (isActive) {
+                    button.classList.add('active');
+                } else {
+                    button.classList.remove('active');
+                }
+
+                if (button.getAttribute('onclick') === 'toggleAllOrdinances()') {
+                    const allOrdinancesActive = this.areAllChildrenActive(button);
+                    button.textContent = allOrdinancesActive ? 'Nascondi tutte' : 'Mostra tutte';
+                }
+            }
+
+            updateParentState(button) {
+                const parent = this.getParent(button);
+                if (!parent) return;
+
+                const shouldBeActive = this.areAllChildrenActive(parent);
+                const currentlyActive = parent.classList.contains('active');
+
+                if (shouldBeActive !== currentlyActive) {
+                    this.setButtonState(parent, shouldBeActive);
+                    this.updateParentState(parent);
+                }
+            }
+
+            setAllDescendants(button, isActive) {
+                const children = this.getChildren(button);
+                
+                children.forEach(child => {
+                    this.setButtonState(child, isActive);
+                    this.setAllDescendants(child, isActive);
+                });
+            }
+
+            toggleMapLayers(button, isActive) {
+                const level = this.getHierarchyLevel(button);
+                
+                switch(level.type) {
+                    case 'main':
+                        allLayers.forEach(layer => {
+                            if (isActive && !map.hasLayer(layer)) {
+                                map.addLayer(layer);
+                            } else if (!isActive && map.hasLayer(layer)) {
+                                map.removeLayer(layer);
+                            }
+                        });
+                        break;
+
+                    case 'ordinance':
+                        const ordId = button.dataset.ord;
+                        if (ordinanceGroups[ordId]) {
+                            Object.values(ordinanceGroups[ordId]).forEach(layerGroup => {
+                                if (isActive && !map.hasLayer(layerGroup)) {
+                                    map.addLayer(layerGroup);
+                                } else if (!isActive && map.hasLayer(layerGroup)) {
+                                    map.removeLayer(layerGroup);
+                                }
+                            });
+                        }
+                        break;
+
+                    case 'zone':
+                        const parts = button.dataset.zone.split('-');
+                        const zoneOrdId = parts[0];
+                        const zoneName = parts.slice(1).join('-');
+                        
+                        if (ordinanceGroups[zoneOrdId] && ordinanceGroups[zoneOrdId][zoneName]) {
+                            const layerGroup = ordinanceGroups[zoneOrdId][zoneName];
+                            if (isActive && !map.hasLayer(layerGroup)) {
+                                map.addLayer(layerGroup);
+                            } else if (!isActive && map.hasLayer(layerGroup)) {
+                                map.removeLayer(layerGroup);
+                            }
+                        }
+                        break;
+
+                    case 'street':
+                        const streetKey = button.dataset.street;
+                        const layers = streetLayers[streetKey];
+                        if (layers) {
+                            layers.forEach(layer => {
+                                if (isActive && !map.hasLayer(layer)) {
+                                    map.addLayer(layer);
+                                } else if (!isActive && map.hasLayer(layer)) {
+                                    map.removeLayer(layer);
+                                }
+                            });
+                        }
+                        break;
+                }
+            }
+
+            getAllDescendants(button) {
+                const children = this.getChildren(button);
+                let descendants = [...children];
+                
+                children.forEach(child => {
+                    descendants = descendants.concat(this.getAllDescendants(child));
+                });
+                
+                return descendants;
+            }
+
+            toggle(button) {
+                const wasActive = button.classList.contains('active');
+                const newState = !wasActive;
+
+                this.setButtonState(button, newState);
+                this.toggleMapLayers(button, newState);
+                this.setAllDescendants(button, newState);
+
+                const descendants = this.getAllDescendants(button);
+                descendants.forEach(descendant => {
+                    this.toggleMapLayers(descendant, newState);
+                });
+
+                this.updateParentState(button);
+                updateVisibleLayers();
+            }
+
+            initialize() {
+                document.querySelectorAll('.toggle-btn').forEach(btn => {
+                    btn.replaceWith(btn.cloneNode(true));
+                });
+
+                document.querySelectorAll('.toggle-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.toggle(btn);
+                    });
+                });
+
+                const mainBtn = document.querySelector('.btn[onclick="toggleAllOrdinances()"]');
+                if (mainBtn) {
+                    mainBtn.onclick = () => this.toggle(mainBtn);
+                }
+            }
+        }
+
+        const hierarchicalController = new HierarchicalController();
+
+        function addEventListeners() {
+            document.querySelectorAll('.ordinance-header').forEach(header => {
+                header.addEventListener('click', function() {
+                    const content = this.nextElementSibling;
+                    const isVisible = content.style.display === 'block';
+                    content.style.display = isVisible ? 'none' : 'block';
+                });
+            });
+
+            document.querySelectorAll('.zone-header').forEach(header => {
+                header.addEventListener('click', function() {
+                    const content = this.nextElementSibling;
+                    const isVisible = content.style.display === 'block';
+                    content.style.display = isVisible ? 'none' : 'block';
+                });
+            });
+
+            document.querySelectorAll('.street-name').forEach(name => {
+                name.addEventListener('click', function() {
+                    const streetKey = this.nextElementSibling.dataset.street;
+                    const layers = streetLayers[streetKey];
+                    if (layers && layers.length > 0) {
+                        const group = L.featureGroup(layers);
+                        map.fitBounds(group.getBounds(), { padding: [20, 20] });
+                    }
+                });
+            });
+
+            hierarchicalController.initialize();
+        }
+
+        function toggleOrdinance(ordId, btn) {
+            hierarchicalController.toggle(btn);
+        }
+
+        function toggleZone(zoneId, btn) {
+            hierarchicalController.toggle(btn);
+        }
+
+        function toggleStreet(streetKey, btn) {
+            hierarchicalController.toggle(btn);
+        }
+
+        function toggleAllOrdinances() {
+            const mainBtn = document.querySelector('.btn[onclick="toggleAllOrdinances()"]');
+            hierarchicalController.toggle(mainBtn);
+        }
+
+        function updateVisibleLayers() {
+            visibleLayers = allLayers.filter(layer => map.hasLayer(layer));
+        }
+
+        function fitToVisible() {
+            if (visibleLayers.length > 0) {
+                const group = L.featureGroup(visibleLayers);
+                map.fitBounds(group.getBounds(), { padding: [50, 50] });
+            }
+        }
+
+        function toggleSidebar() {
+            const content = document.getElementById('sidebar-content');
+            const controls = document.getElementById('sidebar-controls');
+            const toggle = document.getElementById('sidebar-toggle');
+
+            const isVisible = content.style.display !== 'none';
+
+            if (isVisible) {
+                content.style.display = 'none';
+                controls.style.display = 'none';
+                toggle.textContent = '▶';
+            } else {
+                content.style.display = 'block';
+                controls.style.display = 'flex';
+                toggle.textContent = '▼';
+            }
+        }
+
+        // Initialize everything
+        loadCoordinates();
+        initializeBboxes();
+        buildBboxList();
+    </script>
+</body>
+</html>

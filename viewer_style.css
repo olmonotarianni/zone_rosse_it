@@ -1,0 +1,194 @@
+body {
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+}
+
+#map {
+    height: 100vh;
+    width: 100%;
+}
+
+.sidebar {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 350px;
+    max-height: calc(100vh - 20px);
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    z-index: 1000;
+    overflow-y: auto;
+    font-size: 14px;
+}
+
+.sidebar-header {
+    padding: 15px;
+    border-bottom: 1px solid #ddd;
+    background: #f8f9fa;
+    border-radius: 8px 8px 0 0;
+}
+
+.sidebar-header h3 {
+    margin: 0 0 10px 0;
+    color: #333;
+    font-size: 16px;
+}
+
+.controls {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.btn {
+    padding: 6px 12px;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.btn:hover {
+    background: #0056b3;
+}
+
+.sidebar-content {
+    padding: 15px;
+}
+
+.ordinance-group {
+    margin-bottom: 15px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.ordinance-header {
+    background: #e9ecef;
+    padding: 10px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: bold;
+}
+
+.ordinance-header:hover {
+    background: #dee2e6;
+}
+
+.ordinance-content {
+    display: none;
+    background: white;
+}
+
+.zone-group {
+    border-top: 1px solid #eee;
+}
+
+.zone-header {
+    background: #f8f9fa;
+    padding: 8px 10px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 500;
+}
+
+.zone-header:hover {
+    background: #e9ecef;
+}
+
+.zone-content {
+    display: none;
+}
+
+.street-item {
+    padding: 6px 15px;
+    border-bottom: 1px solid #f0f0f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+}
+
+.street-item:hover {
+    background: #f8f9fa;
+}
+
+.street-item.has-geometry,
+.street-item.intersection,
+.street-item.intersection-incomplete,
+.street-item.intersection-point,
+.street-item.civic,
+.street-item.civic-point,
+.street-item.tract,
+.street-item.tract-incomplete,
+.street-item.tract-filtered,
+.street-item.square-area {
+    border-left: 4px solid #dc3545;
+}
+
+.street-item.intersection-point {
+    background: linear-gradient(90deg, #dc354520 0%, transparent 100%);
+}
+
+.street-item.civic-point {
+    background: linear-gradient(90deg, #dc354520 0%, transparent 100%);
+}
+
+.street-item.tract-filtered {
+    background: linear-gradient(90deg, #dc354520 0%, transparent 100%);
+}
+
+.street-item.intersection-incomplete,
+.street-item.tract-incomplete {
+    border-left: 4px solid #ffc107;
+}
+
+.street-item.no-geometry {
+    border-left: 4px solid #6c757d;
+    opacity: 0.6;
+}
+
+.street-name {
+    flex: 1;
+    font-size: 12px;
+}
+
+.toggle-btn {
+    background: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    font-size: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.toggle-btn.active {
+    background: #28a745;
+}
+
+.stats {
+    margin-top: 15px;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 4px;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.sidebar-toggle {
+    cursor: pointer;
+    user-select: none;
+}

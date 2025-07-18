@@ -1,197 +1,209 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Zone rosse per ordinanza - Rome</title>
+    <title>Zone Rosse - Enhanced Geometries</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        body { margin: 0; padding: 0; font-family: Arial, sans-serif; display: flex; }
-
-        #map {
-            height: 100vh;
-            width: 100%;
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-        
+
         .sidebar {
-            position: absolute;
-            top: 10px;
-            right: 10px;
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 350px;
-            max-height: calc(100vh - 20px);
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            height: 100vh;
+            background: linear-gradient(145deg, #2c3e50, #34495e);
+            color: white;
             z-index: 1000;
             overflow-y: auto;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.3);
         }
 
         .sidebar-header {
-            padding: 15px;
-            border-bottom: 1px solid #eee;
-            background: #f8f9fa;
-            border-radius: 8px 8px 0 0;
+            padding: 20px;
+            background: rgba(0,0,0,0.2);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
         }
-        
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .btn {
+            padding: 8px 12px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            background: #2980b9;
+            transform: translateY(-1px);
+        }
+
         .sidebar-content {
-            padding: 10px;
-            max-height: 400px;
-            overflow-y: auto;
+            padding: 20px;
         }
-        
-        .ordinance {
-            margin-bottom: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+
+        .ordinance-group {
+            margin-bottom: 15px;
+            border-radius: 8px;
+            overflow: hidden;
+            background: rgba(255,255,255,0.05);
         }
-        
+
         .ordinance-header {
-            background: #f0f0f0;
-            padding: 8px;
-            border-radius: 4px 4px 0 0;
-            font-weight: bold;
-            font-size: 14px;
+            padding: 12px 15px;
+            background: rgba(0,0,0,0.3);
+            cursor: pointer;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            transition: background 0.3s ease;
         }
-        
+
         .ordinance-header:hover {
-            background: #e0e0e0;
+            background: rgba(0,0,0,0.4);
         }
-        
+
         .ordinance-title {
-            cursor: pointer;
-            flex-grow: 1;
+            font-weight: bold;
+            font-size: 14px;
         }
-        
+
         .ordinance-content {
             display: none;
+            background: rgba(255,255,255,0.02);
         }
 
         .zone-group {
-            border-bottom: 1px solid #eee;
+            border-top: 1px solid rgba(255,255,255,0.1);
         }
-        
-        .zone-group:last-child {
-            border-bottom: none;
-        }
-        
+
         .zone-header {
-            padding: 8px 15px;
-            background: #f5f5f5;
-            color: #666;
-            font-weight: 500;
-            font-size: 13px;
+            padding: 10px 15px;
+            background: rgba(0,0,0,0.2);
+            cursor: pointer;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
-        
-        .zone-header:hover {
-            background: #eeeeee;
-        }
-        
+
         .zone-title {
-            cursor: pointer;
-            flex-grow: 1;
+            font-weight: 500;
+            font-size: 13px;
         }
-        
+
         .zone-content {
             display: none;
             padding: 5px 0;
         }
-        
+
         .street-item {
-            padding: 4px 20px;
-            font-size: 12px;
-            border-left: 3px solid transparent;
+            padding: 8px 15px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            font-size: 12px;
+            border-left: 3px solid transparent;
+            transition: all 0.3s ease;
         }
-        
+
         .street-item:hover {
-            background: #f0f0f0;
+            background: rgba(255,255,255,0.1);
         }
-        
+
+        .street-item.has-coords {
+            border-left-color: #2ecc71;
+        }
+
+        .street-item.intersection {
+            border-left-color: #f39c12;
+        }
+
+        .street-item.civic {
+            border-left-color: #e74c3c;
+        }
+
+        .street-item.tract {
+            border-left-color: #9b59b6;
+        }
+
+        .street-item.geometry {
+            border-left-color: #1abc9c;
+        }
+
+        .street-item.no-coords {
+            border-left-color: #95a5a6;
+            opacity: 0.6;
+        }
+
         .street-name {
             cursor: pointer;
-            flex-grow: 1;
+            flex: 1;
         }
-        
-        .street-item.has-coords {
-            border-left-color: #ff0000;
+
+        .street-name:hover {
+            color: #3498db;
         }
-        
-        .street-item.intersection {
-            border-left-color: #ff6600;
-        }
-        
-        .street-item.civic {
-            border-left-color: #ff8800;
-        }
-        
-        .street-item.tract {
-            border-left-color: #ff0000;
-        }
-        
-        .street-item.no-coords {
-            color: #999;
-            border-left-color: #ccc;
-        }
-        
-        .controls {
-            display: flex;
-            gap: 5px;
-            margin-top: 10px;
-        }
-        
-        .btn {
-            padding: 5px 10px;
-            border: 1px solid #ddd;
-            background: white;
-            border-radius: 3px;
-            cursor: pointer;
-            font-size: 12px;
-        }
-        
-        .btn:hover {
-            background: #f0f0f0;
-        }
-        
+
         .toggle-btn {
-            padding: 2px 6px;
-            border: 1px solid #ccc;
-            background: white;
-            border-radius: 3px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #7f8c8d;
             cursor: pointer;
+            transition: all 0.3s ease;
             font-size: 10px;
-            margin-left: 5px;
-            min-width: 18px;
-            height: 18px;
-            text-align: center;
             display: flex;
             align-items: center;
             justify-content: center;
-        }
-        
-        .toggle-btn:hover {
-            background: #f0f0f0;
-        }
-        
-        .toggle-btn.active {
-            background: #ff4444;
             color: white;
-            border-color: #ff4444;
         }
-        
+
+        .toggle-btn.active {
+            background: #27ae60;
+        }
+
+        .toggle-btn:hover {
+            transform: scale(1.2);
+        }
+
         .stats {
-            margin-top: 10px;
-            padding: 10px;
-            background: #f8f9fa;
-            border-radius: 4px;
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
             font-size: 12px;
+            line-height: 1.6;
+        }
+
+        #map {
+            margin-left: 350px;
+            height: 100vh;
+        }
+
+        #sidebar-toggle {
+            font-size: 16px;
+            transition: transform 0.3s ease;
+        }
+
+        .geometry-info {
+            font-size: 10px;
+            color: #bdc3c7;
+            margin-left: 5px;
         }
     </style>
 </head>
@@ -205,6 +217,7 @@
             <div class="controls" id="sidebar-controls">
                 <button class="btn" onclick="toggleAllOrdinances()">Mostra tutte</button>
                 <button class="btn" onclick="fitToVisible()">Centra mappa</button>
+                <button class="btn" onclick="toggleGeometryMode()">Toggle Mode</button>
             </div>
         </div>
         <div class="sidebar-content" id="sidebar-content">
@@ -224,13 +237,11 @@
         }).addTo(map);
 
         let coordinatesData = {};
-        let allMarkers = [];
-        let visibleMarkers = [];
+        let allFeatures = [];
+        let visibleFeatures = [];
         let ordinanceGroups = {};
-        let streetMarkers = {};
-
-        // Load coordinates data
-        coordinatesData = await fetch('./coordinates.json').then(response => response.json());
+        let streetFeatures = {};
+        let geometryMode = false; // false = points, true = geometries
 
         function isValidCoordinate(coords) {
             if (!coords || coords.length !== 2) return false;
@@ -238,37 +249,41 @@
             return lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180 && lat !== 0 && lon !== 0;
         }
 
-        function createMarker(coords, metadata, streetName, ordId, zoneName) {
-            if (!isValidCoordinate(coords)) {
-                return null;
-            }
+        function createPointFeature(coords, metadata, streetName, ordId, zoneName) {
+            if (!isValidCoordinate(coords)) return null;
 
-            const isIntersection = metadata.type === 'incrocio' && metadata.has_calculated_intersection;
-            const isTract = metadata.type === 'tratto' && metadata.has_calculated_tract;
-            const isCivic = metadata.type === 'civico' && metadata.has_civic_coordinates;
-            
+            const metadataType = metadata?.type;
             let marker;
-            if (isIntersection) {
+
+            if (metadataType === 'incrocio') {
                 const intersectionIcon = L.divIcon({
                     className: 'intersection-marker',
-                    html: '<div style="background-color: #ff6600; width: 12px; height: 12px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.4);"></div>',
+                    html: '<div style="background-color: #f39c12; width: 12px; height: 12px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.4);"></div>',
                     iconSize: [15, 15],
                     iconAnchor: [12, 12]
                 });
                 marker = L.marker(coords, { icon: intersectionIcon });
-            } else if (isCivic) {
-                // Special orange marker for civic numbers
+            } else if (metadataType === 'civico') {
                 const civicIcon = L.divIcon({
                     className: 'civic-marker',
-                    html: '<div style="background-color: #ff8800; width: 12px; height: 12px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.4);"></div>',
+                    html: '<div style="background-color: #e74c3c; width: 12px; height: 12px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.4);"></div>',
                     iconSize: [15, 15],
                     iconAnchor: [12, 12]
                 });
                 marker = L.marker(coords, { icon: civicIcon });
-            } else if (isTract) {
+            } else if (metadataType === 'tratto') {
                 marker = L.circleMarker(coords, {
-                    radius: 4,
-                    fillColor: '#ff0000',
+                    radius: 5,
+                    fillColor: '#9b59b6',
+                    color: '#ffffff',
+                    weight: 2,
+                    opacity: 1,
+                    fillOpacity: 0.8
+                });
+            } else if (metadataType === 'piazza') {
+                marker = L.circleMarker(coords, {
+                    radius: 6,
+                    fillColor: '#1abc9c',
                     color: '#ffffff',
                     weight: 2,
                     opacity: 1,
@@ -277,7 +292,7 @@
             } else {
                 marker = L.circleMarker(coords, {
                     radius: 5,
-                    fillColor: '#ff0000',
+                    fillColor: '#2ecc71',
                     color: '#ffffff',
                     weight: 2,
                     opacity: 1,
@@ -288,44 +303,81 @@
             marker.ordId = ordId;
             marker.zoneName = zoneName;
             marker.streetName = streetName;
-            marker.isIntersection = isIntersection;
-            marker.isTract = isTract;
-            marker.isCivic = isCivic;
+            marker.featureType = 'point';
+            marker.metadata = metadata;
             
             let popupContent = `<strong>${streetName}</strong><br>`;
             popupContent += `<em>Zone:</em> ${zoneName}<br>`;
             popupContent += `<em>Ordinance:</em> ${ordId}<br>`;
-            if (metadata.display_info) {
-                popupContent += `<em>Info:</em> ${metadata.display_info}<br>`;
-            }
-            popupContent += `<em>Type:</em> ${metadata.type}<br>`;
-            if (isIntersection) {
-                popupContent += `<span style="color: #ff6600;">🎯 Calculated intersection point</span>`;
-            } else if (isCivic) {
-                const civicInfo = metadata.civic_count 
-                    ? ` (${metadata.civic_count} point${metadata.civic_count > 1 ? 's' : ''})`
-                    : '';
-                popupContent += `<span style="color: #ff8800;">🏠 Civic number coordinates${civicInfo}</span>`;
-            } else if (isTract) {
-                const tractInfo = metadata.tract_count && metadata.original_primary_count 
-                    ? ` (${metadata.tract_count}/${metadata.original_primary_count} points)`
-                    : '';
-                popupContent += `<span style="color: #007bff;">📏 Street tract${tractInfo}</span>`;
-            }
+            popupContent += `<em>Type:</em> ${metadataType || 'strada'}<br>`;
+            popupContent += `<em>Mode:</em> Point coordinates`;
             
             marker.bindPopup(popupContent);
             return marker;
         }
 
-        function loadCoordinates() {
+        function createGeometryFeature(geometry, metadata, streetName, ordId, zoneName) {
+            if (!geometry || !geometry.coordinates) return null;
+
+            let feature;
+            const metadataType = metadata?.type;
+
+            if (geometry.type === 'LineString') {
+                const coords = geometry.coordinates.map(coord => [coord[0], coord[1]]);
+                
+                let color = '#2ecc71'; // default green for streets
+                let weight = 4;
+                
+                if (metadataType === 'tratto') {
+                    color = '#9b59b6'; // purple for tracts
+                    weight = 5; // slightly thicker for tracts
+                } 
+                
+                feature = L.polyline(coords, {
+                    color: color,
+                    weight: weight,
+                    opacity: 0.8,
+                    smoothFactor: 1
+                });
+            } else if (geometry.type === 'Polygon') {
+                const coords = geometry.coordinates[0].map(coord => [coord[0], coord[1]]);
+                
+                feature = L.polygon(coords, {
+                    color: '#1abc9c',
+                    fillColor: '#1abc9c',
+                    fillOpacity: 0.3,
+                    weight: 3,
+                    opacity: 0.8
+                });
+            } else {
+                return null;
+            }
+
+            feature.ordId = ordId;
+            feature.zoneName = zoneName;
+            feature.streetName = streetName;
+            feature.featureType = 'geometry';
+            feature.geometryType = geometry.type;
+            feature.metadata = metadata;
+
+            let popupContent = `<strong>${streetName}</strong><br>`;
+            popupContent += `<em>Zone:</em> ${zoneName}<br>`;
+            popupContent += `<em>Ordinance:</em> ${ordId}<br>`;
+            popupContent += `<em>Type:</em> ${metadataType || 'strada'}<br>`;
+            popupContent += `<em>Geometry:</em> ${geometry.type}<br>`;
+            popupContent += `<em>Points:</em> ${geometry.coordinates.length}`;
+
+            feature.bindPopup(popupContent);
+            return feature;
+        }
+
+        async function loadCoordinates() {
+            // Load coordinates data
+            coordinatesData = await fetch('./coordinates.json').then(response => response.json());
+            
             let totalStreets = 0;
             let streetsWithCoords = 0;
-            let intersectionCount = 0;
-            let calculatedIntersections = 0;
-            let tractCount = 0;
-            let calculatedTracts = 0;
-            let civicCount = 0;
-            let calculatedCivics = 0;
+            let streetsWithGeometries = 0;
 
             console.log('Loading coordinates data:', coordinatesData);
 
@@ -347,154 +399,179 @@
                         totalStreets++;
                         
                         const streetKey = `${ordId}-${zoneName}-${streetName}`;
-                        streetMarkers[streetKey] = [];
+                        streetFeatures[streetKey] = [];
                         
                         console.log(`    Processing street: ${streetName}`, streetData);
                         
                         if (streetData) {
-                            if (streetData.coordinates && Array.isArray(streetData.coordinates) && streetData.coordinates.length > 0) {
-                                streetsWithCoords++;
-                                
-                                const firstCoord = streetData.coordinates[0];
-                                const isObjectFormat = firstCoord && typeof firstCoord === 'object' && firstCoord.coords;
-                                const isDirectFormat = firstCoord && Array.isArray(firstCoord) && firstCoord.length === 2;
-                                
-                                const metadataType = streetData.metadata?.type;
-                                
-                                if (metadataType === 'civico') {
-                                    civicCount++;
+                            const metadataType = streetData.metadata?.type;
+                            
+                            // Handle special coordinate types (keep as points)
+                            if (metadataType === 'incrocio') {
+                                // Intersections: show calculated intersection point only
+                                if (streetData.coordinates && Array.isArray(streetData.coordinates)) {
+                                    streetsWithCoords++;
                                     
-                                    if (streetData.metadata.has_civic_coordinates) {
-                                        calculatedCivics++;
+                                    for (const coordEntry of streetData.coordinates) {
+                                        // Look for intersection type or use direct coordinates
+                                        let coords = null;
                                         
-                                        if (isObjectFormat) {
-                                            streetData.coordinates.forEach((coordData, index) => {
-                                                if (coordData && coordData.coords && coordData.type === 'civic') {
-                                                    const marker = createMarker(coordData.coords, streetData.metadata, streetName, ordId, zoneName);
-                                                    if (marker) {
-                                                        ordinanceGroups[ordId][zoneName].addLayer(marker);
-                                                        allMarkers.push(marker);
-                                                        streetMarkers[streetKey].push(marker);
-                                                        console.log(`      Added civic marker ${index} for: ${streetName}`);
-                                                    }
-                                                }
-                                            });
-                                        } else if (isDirectFormat) {
-                                            streetData.coordinates.forEach((coords, index) => {
-                                                if (coords && Array.isArray(coords) && coords.length === 2) {
-                                                    const marker = createMarker(coords, streetData.metadata, streetName, ordId, zoneName);
-                                                    if (marker) {
-                                                        ordinanceGroups[ordId][zoneName].addLayer(marker);
-                                                        allMarkers.push(marker);
-                                                        streetMarkers[streetKey].push(marker);
-                                                        console.log(`      Added direct civic marker ${index} for: ${streetName}`);
-                                                    }
-                                                }
-                                            });
+                                        if (coordEntry && typeof coordEntry === 'object' && coordEntry.type === 'intersection') {
+                                            coords = coordEntry.coords;
+                                        } else if (Array.isArray(coordEntry) && coordEntry.length === 2) {
+                                            coords = coordEntry;
+                                        }
+                                        
+                                        if (coords) {
+                                            const feature = createPointFeature(coords, streetData.metadata, streetName, ordId, zoneName);
+                                            if (feature) {
+                                                ordinanceGroups[ordId][zoneName].addLayer(feature);
+                                                allFeatures.push(feature);
+                                                streetFeatures[streetKey].push(feature);
+                                                console.log(`      Added intersection point for: ${streetName}`);
+                                                break; // Only show one intersection point
+                                            }
+                                        }
+                                    }
+                                }
+                            } else if (metadataType === 'civico') {
+                                // Civic numbers: show specific address points only
+                                if (streetData.coordinates && Array.isArray(streetData.coordinates)) {
+                                    streetsWithCoords++;
+                                    
+                                    streetData.coordinates.forEach((coordEntry, index) => {
+                                        let coords = null;
+                                        
+                                        if (coordEntry && typeof coordEntry === 'object' && coordEntry.type === 'civic') {
+                                            coords = coordEntry.coords;
+                                        } else if (Array.isArray(coordEntry) && coordEntry.length === 2) {
+                                            coords = coordEntry;
+                                        }
+                                        
+                                        if (coords) {
+                                            const feature = createPointFeature(coords, streetData.metadata, streetName, ordId, zoneName);
+                                            if (feature) {
+                                                ordinanceGroups[ordId][zoneName].addLayer(feature);
+                                                allFeatures.push(feature);
+                                                streetFeatures[streetKey].push(feature);
+                                                console.log(`      Added civic point ${index} for: ${streetName}`);
+                                            }
+                                        }
+                                    });
+                                }
+                            } else if (metadataType === 'tratto') {
+                                // Tracts: show as simplified LineString (section of street between A and B)
+                                if (streetData.coordinates && Array.isArray(streetData.coordinates)) {
+                                    streetsWithCoords++;
+                                    
+                                    // Collect tract coordinates
+                                    const tractCoords = [];
+                                    for (const coordEntry of streetData.coordinates) {
+                                        let coords = null;
+                                        
+                                        if (coordEntry && typeof coordEntry === 'object' && coordEntry.type === 'tract') {
+                                            coords = coordEntry.coords;
+                                        } else if (Array.isArray(coordEntry) && coordEntry.length === 2) {
+                                            coords = coordEntry;
+                                        }
+                                        
+                                        if (coords) {
+                                            tractCoords.push([coords[0], coords[1]]);
                                         }
                                     }
                                     
-                                } else if (metadataType === 'incrocio') {
-                                    intersectionCount++;
-                                    
-                                    if (isObjectFormat) {
-                                        const intersectionCoord = streetData.coordinates.find(c => c.type === 'intersection');
+                                    if (tractCoords.length >= 2) {
+                                        // SIMPLIFY TRACT COORDINATES to avoid zigzag mess
+                                        let simplifiedCoords = tractCoords;
                                         
-                                        if (intersectionCoord) {
-                                            calculatedIntersections++;
-                                            const marker = createMarker(intersectionCoord.coords, streetData.metadata, streetName, ordId, zoneName);
-                                            if (marker) {
-                                                ordinanceGroups[ordId][zoneName].addLayer(marker);
-                                                allMarkers.push(marker);
-                                                streetMarkers[streetKey].push(marker);
-                                                console.log(`      Added intersection marker for: ${streetName}`);
-                                            }
-                                        } else {
-                                            streetData.coordinates.forEach((coordData, index) => {
-                                                if (coordData && coordData.coords) {
-                                                    const marker = createMarker(coordData.coords, streetData.metadata, streetName, ordId, zoneName);
-                                                    if (marker) {
-                                                        ordinanceGroups[ordId][zoneName].addLayer(marker);
-                                                        allMarkers.push(marker);
-                                                        streetMarkers[streetKey].push(marker);
-                                                        console.log(`      Added intersection fallback marker ${index} for: ${streetName}`);
+                                        if (tractCoords.length > 4) {
+                                            // For tracts with many points, just use endpoints for clean line
+                                            const startCoord = tractCoords[0];
+                                            const endCoord = tractCoords[tractCoords.length - 1];
+                                            
+                                            // Find the two most distant points to define main direction
+                                            let maxDist = 0;
+                                            let bestStart = startCoord;
+                                            let bestEnd = endCoord;
+                                            
+                                            for (let i = 0; i < tractCoords.length; i++) {
+                                                for (let j = i + 1; j < tractCoords.length; j++) {
+                                                    const coord1 = tractCoords[i];
+                                                    const coord2 = tractCoords[j];
+                                                    const dist = Math.sqrt(
+                                                        Math.pow(coord2[0] - coord1[0], 2) + 
+                                                        Math.pow(coord2[1] - coord1[1], 2)
+                                                    );
+                                                    if (dist > maxDist) {
+                                                        maxDist = dist;
+                                                        bestStart = coord1;
+                                                        bestEnd = coord2;
                                                     }
                                                 }
-                                            });
+                                            }
+                                            
+                                            // Use just the two most distant points for a clean line
+                                            simplifiedCoords = [bestStart, bestEnd];
+                                            console.log(`      Simplified tract from ${tractCoords.length} to 2 points for: ${streetName}`);
                                         }
-                                    } else if (isDirectFormat) {
-                                        streetData.coordinates.forEach((coords, index) => {
-                                            if (coords && Array.isArray(coords) && coords.length === 2) {
-                                                const marker = createMarker(coords, streetData.metadata, streetName, ordId, zoneName);
-                                                if (marker) {
-                                                    ordinanceGroups[ordId][zoneName].addLayer(marker);
-                                                    allMarkers.push(marker);
-                                                    streetMarkers[streetKey].push(marker);
-                                                    console.log(`      Added direct intersection marker ${index} for: ${streetName}`);
-                                                }
+                                        
+                                        // Create LineString for tract with simplified coordinates
+                                        const tractGeometry = {
+                                            type: 'LineString',
+                                            coordinates: simplifiedCoords
+                                        };
+                                        
+                                        const feature = createGeometryFeature(tractGeometry, streetData.metadata, streetName, ordId, zoneName);
+                                        if (feature) {
+                                            allFeatures.push(feature);
+                                            streetFeatures[streetKey].push(feature);
+                                            console.log(`      Added simplified tract LineString for: ${streetName} (${simplifiedCoords.length} points)`);
+                                        }
+                                        
+                                        // Also create points for point mode (use original coordinates)
+                                        tractCoords.forEach((coords, index) => {
+                                            const pointFeature = createPointFeature(coords, streetData.metadata, streetName, ordId, zoneName);
+                                            if (pointFeature) {
+                                                ordinanceGroups[ordId][zoneName].addLayer(pointFeature);
+                                                allFeatures.push(pointFeature);
+                                                streetFeatures[streetKey].push(pointFeature);
                                             }
                                         });
                                     }
+                                }
+                            } else {
+                                // Regular streets and squares: use both points and geometries
+                                
+                                // Process point coordinates (original format)
+                                if (streetData.coordinates && Array.isArray(streetData.coordinates) && streetData.coordinates.length > 0) {
+                                    streetsWithCoords++;
                                     
-                                } else if (metadataType === 'tratto') {
-                                    tractCount++;
+                                    streetData.coordinates.forEach((coords, index) => {
+                                        if (Array.isArray(coords) && coords.length === 2) {
+                                            const feature = createPointFeature(coords, streetData.metadata, streetName, ordId, zoneName);
+                                            if (feature) {
+                                                ordinanceGroups[ordId][zoneName].addLayer(feature);
+                                                allFeatures.push(feature);
+                                                streetFeatures[streetKey].push(feature);
+                                                console.log(`      Added point feature ${index} for: ${streetName}`);
+                                            }
+                                        }
+                                    });
+                                }
+
+                                // Process geometries (new format)
+                                if (streetData.geometries && Array.isArray(streetData.geometries) && streetData.geometries.length > 0) {
+                                    streetsWithGeometries++;
                                     
-                                    if (streetData.metadata.has_calculated_tract) {
-                                        calculatedTracts++;
-                                    }
-                                    
-                                    if (isObjectFormat) {
-                                        streetData.coordinates.forEach((coordData, index) => {
-                                            if (coordData && coordData.coords && coordData.type === 'tract') {
-                                                const marker = createMarker(coordData.coords, streetData.metadata, streetName, ordId, zoneName);
-                                                if (marker) {
-                                                    ordinanceGroups[ordId][zoneName].addLayer(marker);
-                                                    allMarkers.push(marker);
-                                                    streetMarkers[streetKey].push(marker);
-                                                    console.log(`      Added tract marker ${index} for: ${streetName}`);
-                                                }
-                                            }
-                                        });
-                                    } else if (isDirectFormat) {
-                                        streetData.coordinates.forEach((coords, index) => {
-                                            if (coords && Array.isArray(coords) && coords.length === 2) {
-                                                const marker = createMarker(coords, streetData.metadata, streetName, ordId, zoneName);
-                                                if (marker) {
-                                                    ordinanceGroups[ordId][zoneName].addLayer(marker);
-                                                    allMarkers.push(marker);
-                                                    streetMarkers[streetKey].push(marker);
-                                                    console.log(`      Added direct tract marker ${index} for: ${streetName}`);
-                                                }
-                                            }
-                                        });
-                                    }
-                                    
-                                } else {
-                                    if (isObjectFormat) {
-                                        streetData.coordinates.forEach((coordData, index) => {
-                                            if (coordData && coordData.coords) {
-                                                const marker = createMarker(coordData.coords, streetData.metadata, streetName, ordId, zoneName);
-                                                if (marker) {
-                                                    ordinanceGroups[ordId][zoneName].addLayer(marker);
-                                                    allMarkers.push(marker);
-                                                    streetMarkers[streetKey].push(marker);
-                                                    console.log(`      Added object marker ${index} for: ${streetName}`);
-                                                }
-                                            }
-                                        });
-                                    } else if (isDirectFormat) {
-                                        streetData.coordinates.forEach((coords, index) => {
-                                            if (coords && Array.isArray(coords) && coords.length === 2) {
-                                                const marker = createMarker(coords, streetData.metadata, streetName, ordId, zoneName);
-                                                if (marker) {
-                                                    ordinanceGroups[ordId][zoneName].addLayer(marker);
-                                                    allMarkers.push(marker);
-                                                    streetMarkers[streetKey].push(marker);
-                                                    console.log(`      Added direct marker ${index} for: ${streetName}`);
-                                                }
-                                            }
-                                        });
-                                    }
+                                    streetData.geometries.forEach((geometry, index) => {
+                                        const feature = createGeometryFeature(geometry, streetData.metadata, streetName, ordId, zoneName);
+                                        if (feature) {
+                                            // Don't add to map yet, will be toggled
+                                            allFeatures.push(feature);
+                                            streetFeatures[streetKey].push(feature);
+                                            console.log(`      Added geometry feature ${index} for: ${streetName} (${geometry.type})`);
+                                        }
+                                    });
                                 }
                             }
                         }
@@ -502,26 +579,45 @@
                 }
             }
 
-            console.log(`Summary: ${totalStreets} total streets, ${streetsWithCoords} with coordinates`);
-            console.log(`Intersections: ${calculatedIntersections}/${intersectionCount} calculated`);
-            console.log(`Tracts: ${calculatedTracts}/${tractCount} calculated`);
-            console.log(`Civics: ${calculatedCivics}/${civicCount} calculated`);
+            console.log(`Summary: ${totalStreets} total streets, ${streetsWithCoords} with coordinates, ${streetsWithGeometries} with geometries`);
             
-            buildSidebar(totalStreets, streetsWithCoords, intersectionCount, calculatedIntersections, tractCount, calculatedTracts, civicCount, calculatedCivics);
+            // Count special types
+            let intersectionCount = 0;
+            let tractCount = 0;
+            let civicCount = 0;
+            
+            for (const ordData of Object.values(coordinatesData)) {
+                for (const streets of Object.values(ordData.zones)) {
+                    for (const streetData of Object.values(streets)) {
+                        if (streetData && streetData.metadata) {
+                            const type = streetData.metadata.type;
+                            if (type === 'incrocio') intersectionCount++;
+                            else if (type === 'tratto') tractCount++;
+                            else if (type === 'civico') civicCount++;
+                        }
+                    }
+                }
+            }
+            
+            buildSidebar(totalStreets, streetsWithCoords, streetsWithGeometries, intersectionCount, tractCount, civicCount);
         }
 
-        function buildSidebar(totalStreets, streetsWithCoords, intersectionCount, calculatedIntersections, tractCount, calculatedTracts, civicCount, calculatedCivics) {
+        function buildSidebar(totalStreets, streetsWithCoords, streetsWithGeometries, intersectionCount, tractCount, civicCount) {
             const ordinancesList = document.getElementById('ordinances-list');
             ordinancesList.innerHTML = '';
 
             for (const [ordId, ordData] of Object.entries(coordinatesData)) {
                 const ordDiv = document.createElement('div');
                 ordDiv.className = 'ordinance-group';
+
+                const protocol = ordData.metadata?.protocol || ordId;
+                const date = ordData.metadata?.date || '';
+                const ordinanceTitle = `Prot. n. ${protocol}${date ? ` (${date})` : ''}`;
                 
                 const ordHeader = document.createElement('div');
                 ordHeader.className = 'ordinance-header';
                 ordHeader.innerHTML = `
-                    <span class="ordinance-title">${ordId}</span>
+                    <span class="ordinance-title">${ordinanceTitle}</span>
                     <span class="toggle-btn" data-ord="${ordId}">●</span>
                 `;
                 
@@ -547,29 +643,34 @@
                     for (const [streetName, streetData] of Object.entries(streets)) {
                         const streetDiv = document.createElement('div');
                         const hasCoords = streetData && streetData.coordinates && streetData.coordinates.length > 0;
+                        const hasGeometries = streetData && streetData.geometries && streetData.geometries.length > 0;
                         const metadataType = streetData?.metadata?.type;
-                        const hasCalculatedIntersection = streetData?.metadata?.has_calculated_intersection;
-                        const hasCalculatedTract = streetData?.metadata?.has_calculated_tract;
-                        const hasCivicCoordinates = streetData?.metadata?.has_civic_coordinates;
                         
                         let streetClass = 'street-item';
-                        if (hasCoords) {
-                            if (metadataType === 'incrocio' && hasCalculatedIntersection) {
-                                streetClass += ' intersection';
-                            } else if (metadataType === 'civico' && hasCivicCoordinates) {
-                                streetClass += ' civic';
-                            } else if (metadataType === 'tratto' && hasCalculatedTract) {
-                                streetClass += ' tract';
-                            } else {
-                                streetClass += ' has-coords';
-                            }
+                        let geometryInfo = '';
+                        
+                        if (metadataType === 'incrocio') {
+                            streetClass += ' intersection';
+                            geometryInfo = '<span class="geometry-info">[intersection point]</span>';
+                        } else if (metadataType === 'civico') {
+                            streetClass += ' civic';
+                            geometryInfo = '<span class="geometry-info">[civic points]</span>';
+                        } else if (metadataType === 'tratto') {
+                            streetClass += ' tract';
+                            geometryInfo = '<span class="geometry-info">[street section]</span>';
+                        } else if (hasGeometries) {
+                            streetClass += ' geometry';
+                            const geomTypes = streetData.geometries.map(g => g.type).join(', ');
+                            geometryInfo = `<span class="geometry-info">[${geomTypes}]</span>`;
+                        } else if (hasCoords) {
+                            streetClass += ' has-coords';
                         } else {
                             streetClass += ' no-coords';
                         }
                         
                         streetDiv.className = streetClass;
                         streetDiv.innerHTML = `
-                            <span class="street-name">${streetName}</span>
+                            <span class="street-name">${streetName}${geometryInfo}</span>
                             <span class="toggle-btn" data-street="${ordId}-${zoneName}-${streetName}">●</span>
                         `;
                         zoneContent.appendChild(streetDiv);
@@ -588,13 +689,88 @@
             document.getElementById('stats').innerHTML = `
                 <strong>Statistics:</strong><br>
                 📋 ${Object.keys(coordinatesData).length} ordinances<br>
-                🏛️ ${streetsWithCoords}/${totalStreets} streets with coordinates<br>
-                🎯 ${calculatedIntersections}/${intersectionCount} calculated intersections<br>
-                🏠 ${calculatedCivics}/${civicCount} civic number coordinates<br>
-                📏 ${calculatedTracts}/${tractCount} calculated tracts
+                🏛️ ${streetsWithCoords}/${totalStreets} streets with point coordinates<br>
+                🗺️ ${streetsWithGeometries}/${totalStreets} streets with geometries<br>
+                🎯 ${intersectionCount} intersections<br>
+                📏 ${tractCount} street tracts<br>
+                🏠 ${civicCount} civic numbers<br>
+                📍 Mode: ${geometryMode ? 'Geometries (Lines/Polygons)' : 'Points (Scatter)'}<br>
+                🎯 Total features: ${allFeatures.length}
             `;
 
             addEventListeners();
+        }
+
+        function toggleGeometryMode() {
+            geometryMode = !geometryMode;
+            
+            // Remove all current features from map
+            allFeatures.forEach(feature => {
+                if (map.hasLayer(feature)) {
+                    map.removeLayer(feature);
+                }
+            });
+
+            // Re-add appropriate features based on mode
+            allFeatures.forEach(feature => {
+                const isSpecialPoint = feature.streetName && 
+                    (feature.ordId && streetFeatures[`${feature.ordId}-${feature.zoneName}-${feature.streetName}`]?.some(f => 
+                        f.metadata?.type === 'incrocio' || f.metadata?.type === 'civico'));
+                
+                if (geometryMode) {
+                    // Show geometries + always show intersections and civic points
+                    if (feature.featureType === 'geometry' || 
+                        (feature.featureType === 'point' && (feature.metadata?.type === 'incrocio' || feature.metadata?.type === 'civico'))) {
+                        ordinanceGroups[feature.ordId][feature.zoneName].addLayer(feature);
+                    }
+                } else {
+                    // Show points
+                    if (feature.featureType === 'point') {
+                        ordinanceGroups[feature.ordId][feature.zoneName].addLayer(feature);
+                    }
+                }
+            });
+
+            // Update all toggle buttons to inactive state
+            document.querySelectorAll('.toggle-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            updateVisibleFeatures();
+            
+            // Refresh sidebar to update mode display
+            const ordinancesList = document.getElementById('ordinances-list');
+            ordinancesList.innerHTML = '';
+            
+            // Get current stats
+            let totalStreets = 0;
+            let streetsWithCoords = 0;
+            let streetsWithGeometries = 0;
+            let intersectionCount = 0;
+            let tractCount = 0;
+            let civicCount = 0;
+            
+            for (const ordData of Object.values(coordinatesData)) {
+                for (const streets of Object.values(ordData.zones)) {
+                    for (const [streetName, streetData] of Object.entries(streets)) {
+                        totalStreets++;
+                        if (streetData && streetData.coordinates && streetData.coordinates.length > 0) {
+                            streetsWithCoords++;
+                        }
+                        if (streetData && streetData.geometries && streetData.geometries.length > 0) {
+                            streetsWithGeometries++;
+                        }
+                        if (streetData && streetData.metadata) {
+                            const type = streetData.metadata.type;
+                            if (type === 'incrocio') intersectionCount++;
+                            else if (type === 'tratto') tractCount++;
+                            else if (type === 'civico') civicCount++;
+                        }
+                    }
+                }
+            }
+            
+            buildSidebar(totalStreets, streetsWithCoords, streetsWithGeometries, intersectionCount, tractCount, civicCount);
         }
 
         function addEventListeners() {
@@ -617,10 +793,17 @@
             document.querySelectorAll('.street-name').forEach(name => {
                 name.addEventListener('click', function() {
                     const streetKey = this.nextElementSibling.dataset.street;
-                    const markers = streetMarkers[streetKey];
-                    if (markers && markers.length > 0) {
-                        const group = L.featureGroup(markers);
-                        map.fitBounds(group.getBounds(), { padding: [20, 20] });
+                    const features = streetFeatures[streetKey];
+                    if (features && features.length > 0) {
+                        // Filter features based on current mode
+                        const relevantFeatures = features.filter(f => 
+                            geometryMode ? f.featureType === 'geometry' : f.featureType === 'point'
+                        );
+                        
+                        if (relevantFeatures.length > 0) {
+                            const group = L.featureGroup(relevantFeatures);
+                            map.fitBounds(group.getBounds(), { padding: [20, 20] });
+                        }
                     }
                 });
             });
@@ -644,77 +827,167 @@
         }
 
         function toggleOrdinance(ordId, btn) {
+            if (!ordinanceGroups[ordId]) {
+                console.error('Ordinance not found:', ordId);
+                return;
+            }
+            
             const isActive = btn.classList.contains('active');
             
-            for (const [zoneName, layerGroup] of Object.entries(ordinanceGroups[ordId])) {
-                if (isActive) {
-                    map.removeLayer(layerGroup);
-                } else {
-                    map.addLayer(layerGroup);
+            try {
+                for (const [zoneName, layerGroup] of Object.entries(ordinanceGroups[ordId])) {
+                    if (layerGroup) {
+                        if (isActive) {
+                            if (map.hasLayer(layerGroup)) {
+                                map.removeLayer(layerGroup);
+                            }
+                        } else {
+                            // Only add features matching current mode
+                            layerGroup.eachLayer(layer => {
+                                const shouldShow = geometryMode ? 
+                                    (layer.featureType === 'geometry' || 
+                                     (layer.featureType === 'point' && (layer.metadata?.type === 'incrocio' || layer.metadata?.type === 'civico'))) :
+                                    (layer.featureType === 'point');
+                                
+                                if (shouldShow && !map.hasLayer(layer)) {
+                                    map.addLayer(layer);
+                                }
+                            });
+                        }
+                    }
                 }
+            } catch (error) {
+                console.error('Error toggling ordinance layers:', error);
+                return;
             }
             
             btn.classList.toggle('active');
-            updateVisibleMarkers();
+            
+            const newState = !isActive;
+            document.querySelectorAll(`[data-zone^="${ordId}-"]`).forEach(zoneBtn => {
+                if (newState) {
+                    zoneBtn.classList.add('active');
+                } else {
+                    zoneBtn.classList.remove('active');
+                }
+            });
+            
+            document.querySelectorAll(`[data-street^="${ordId}-"]`).forEach(streetBtn => {
+                if (newState) {
+                    streetBtn.classList.add('active');
+                } else {
+                    streetBtn.classList.remove('active');
+                }
+            });
+            
+            updateVisibleFeatures();
         }
 
         function toggleZone(zoneId, btn) {
-            const [ordId, zoneName] = zoneId.split('-');
+            const parts = zoneId.split('-');
+            if (parts.length < 2) return;
+            
+            const ordId = parts[0];
+            const zoneName = parts.slice(1).join('-');
+            
+            if (!ordinanceGroups[ordId] || !ordinanceGroups[ordId][zoneName]) return;
+            
             const layerGroup = ordinanceGroups[ordId][zoneName];
             const isActive = btn.classList.contains('active');
             
-            if (isActive) {
-                map.removeLayer(layerGroup);
-            } else {
-                map.addLayer(layerGroup);
+            try {
+                if (isActive) {
+                    layerGroup.eachLayer(layer => {
+                        if (map.hasLayer(layer)) map.removeLayer(layer);
+                    });
+                } else {
+                    layerGroup.eachLayer(layer => {
+                        if (geometryMode && layer.featureType === 'geometry') {
+                            if (!map.hasLayer(layer)) map.addLayer(layer);
+                        } else if (!geometryMode && layer.featureType === 'point') {
+                            if (!map.hasLayer(layer)) map.addLayer(layer);
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Error toggling layer group:', error);
+                return;
             }
             
             btn.classList.toggle('active');
-            updateVisibleMarkers();
+            
+            const newState = !isActive;
+            document.querySelectorAll(`[data-street^="${zoneId}-"]`).forEach(streetBtn => {
+                if (newState) {
+                    streetBtn.classList.add('active');
+                } else {
+                    streetBtn.classList.remove('active');
+                }
+            });
+            
+            updateVisibleFeatures();
         }
 
         function toggleStreet(streetKey, btn) {
-            const markers = streetMarkers[streetKey];
+            const features = streetFeatures[streetKey];
             const isActive = btn.classList.contains('active');
             
-            if (markers) {
-                markers.forEach(marker => {
-                    if (isActive) {
-                        map.removeLayer(marker);
-                    } else {
-                        map.addLayer(marker);
+            if (features) {
+                features.forEach(feature => {
+                    const shouldShow = geometryMode ? 
+                        (feature.featureType === 'geometry' || 
+                         (feature.featureType === 'point' && (feature.metadata?.type === 'incrocio' || feature.metadata?.type === 'civico'))) :
+                        (feature.featureType === 'point');
+                    
+                    if (shouldShow) {
+                        if (isActive) {
+                            if (map.hasLayer(feature)) map.removeLayer(feature);
+                        } else {
+                            if (!map.hasLayer(feature)) map.addLayer(feature);
+                        }
                     }
                 });
             }
             
             btn.classList.toggle('active');
-            updateVisibleMarkers();
+            updateVisibleFeatures();
         }
 
         function toggleAllOrdinances() {
             const allActive = document.querySelectorAll('.toggle-btn.active').length > 0;
             
             if (allActive) {
-                allMarkers.forEach(marker => map.removeLayer(marker));
+                allFeatures.forEach(feature => {
+                    if (map.hasLayer(feature)) map.removeLayer(feature);
+                });
                 document.querySelectorAll('.toggle-btn').forEach(btn => {
                     btn.classList.remove('active');
                 });
             } else {
-                allMarkers.forEach(marker => map.addLayer(marker));
+                allFeatures.forEach(feature => {
+                    const shouldShow = geometryMode ? 
+                        (feature.featureType === 'geometry' || 
+                         (feature.featureType === 'point' && (feature.metadata?.type === 'incrocio' || feature.metadata?.type === 'civico'))) :
+                        (feature.featureType === 'point');
+                        
+                    if (shouldShow && !map.hasLayer(feature)) {
+                        map.addLayer(feature);
+                    }
+                });
                 document.querySelectorAll('.toggle-btn').forEach(btn => {
                     btn.classList.add('active');
                 });
             }
-            updateVisibleMarkers();
+            updateVisibleFeatures();
         }
 
-        function updateVisibleMarkers() {
-            visibleMarkers = allMarkers.filter(marker => map.hasLayer(marker));
+        function updateVisibleFeatures() {
+            visibleFeatures = allFeatures.filter(feature => map.hasLayer(feature));
         }
 
         function fitToVisible() {
-            if (visibleMarkers.length > 0) {
-                const group = L.featureGroup(visibleMarkers);
+            if (visibleFeatures.length > 0) {
+                const group = L.featureGroup(visibleFeatures);
                 map.fitBounds(group.getBounds(), { padding: [50, 50] });
             }
         }
@@ -737,7 +1010,9 @@
             }
         }
 
-        loadCoordinates();
+        (async () => {
+            await loadCoordinates();
+        })();
     </script>
 </body>
 </html>
