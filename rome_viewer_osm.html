@@ -17,7 +17,6 @@
             <div class="controls" id="sidebar-controls">
                 <button class="btn" onclick="toggleAllOrdinances()">Mostra tutte</button>
                 <button class="btn" onclick="fitToVisible()">Centra mappa</button>
-                <button class="btn secondary" onclick="toggleBboxPanel()">Config Zones</button>
             </div>
         </div>
         <div class="sidebar-content" id="sidebar-content">
@@ -26,86 +25,7 @@
         </div>
     </div>
 
-    <!-- Bbox Panel - moved to bottom-left -->
-    <div class="bbox-panel" id="bbox-panel" style="display: none;">
-        <div class="bbox-header">
-            <h4>🗺️ Config Zones</h4>
-            <button class="btn" onclick="toggleAllBboxes()">Toggle All</button>
-        </div>
-        <div id="bbox-list"></div>
-    </div>
-
     <div id="map"></div>
-
-    <style>
-        .btn.secondary { background: #6c757d; }
-        .btn.secondary:hover { background: #545b62; }
-        
-        .bbox-panel {
-            position: fixed;
-            left: 20px;           /* Changed from right to left */
-            bottom: 20px;         /* Changed from top to bottom */
-            width: 280px;
-            max-height: 400px;
-            background: white;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            overflow-y: auto;
-            z-index: 1000;
-        }
-        
-        .bbox-header {
-            padding: 12px;
-            background: #f8f9fa;
-            border-bottom: 1px solid #ddd;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .bbox-item {
-            padding: 8px 12px;
-            border-bottom: 1px solid #f0f0f0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 13px;
-        }
-        
-        .bbox-item:hover {
-            background: #f8f9fa;
-        }
-        
-        .bbox-color {
-            width: 16px;
-            height: 16px;
-            border-radius: 3px;
-            margin-right: 8px;
-            border: 1px solid #666;
-        }
-        
-        .bbox-info {
-            display: flex;
-            align-items: center;
-            flex-grow: 1;
-        }
-        
-        .bbox-toggle {
-            padding: 4px 8px;
-            font-size: 11px;
-            border: none;
-            border-radius: 3px;
-            cursor: pointer;
-            background: #e9ecef;
-            color: #495057;
-        }
-        
-        .bbox-toggle.active {
-            background: #28a745;
-            color: white;
-        }
-    </style>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
@@ -122,167 +42,8 @@
         let streetLayers = {};
         let bboxLayers = {};
 
-        // City configs with exact coordinates from coordinates_fetcher.py
-        const cityConfigs = {
-            rome: {
-                name: "Rome",
-                default_bbox: [41.8, 12.4, 42.0, 12.6],
-                zone_bboxes: {
-                    'esquilino': [41.888, 12.495, 41.905, 12.52],
-                    'tuscolano': [41.85, 12.512, 41.883, 12.56], 
-                    'valle_aurelia': [41.889, 12.41, 41.925, 12.46]
-                },
-                colors: {
-                    'default': '#95a5a6',
-                    'esquilino': '#e74c3c',
-                    'tuscolano': '#3498db',
-                    'valle_aurelia': '#2ecc71'
-                }
-            },
-            milan: {
-                name: "Milan",
-                default_bbox: [45.40, 9.05, 45.55, 9.35],
-                zone_bboxes: {
-                    'zona_duomo': [45.460, 9.175, 45.470, 9.205],
-                    'navigli': [45.440, 9.160, 45.460, 9.190],
-                    'stazione_centrale': [45.468, 9.192, 45.494, 9.215],
-                    'stazione_porta_garibaldi': [45.475, 9.178, 45.495, 9.198],
-                    'stazione_rogoredo': [45.425, 9.210, 45.445, 9.250],
-                },
-                colors: {
-                    'default': '#95a5a6',
-                    'zona_duomo': '#9b59b6',
-                    'darsena_e_navigli': '#1abc9c',
-                    'navigli': '#16a085',
-                    'stazione_centrale': '#e67e22',
-                    'stazione_porta_garibaldi': '#f39c12',
-                    'stazione_rogoredo': '#d35400',
-                }
-            }
-        };
-
         coordinatesData = await fetch('./coordinates_osm.json').then(response => response.json());
 
-        // Bbox functions
-        function createBboxLayer(name, bbox, color, cityName) {
-            const [south, west, north, east] = bbox;
-            const bounds = [[south, west], [north, east]];
-            
-            return L.rectangle(bounds, {
-                color: color,
-                weight: 2,
-                opacity: 0.8,
-                fillColor: color,
-                fillOpacity: 0.1,
-                dashArray: '5, 5'
-            }).bindPopup(`<strong>${cityName}: ${name}</strong><br>Bbox: ${south.toFixed(4)}, ${west.toFixed(4)}<br>to ${north.toFixed(4)}, ${east.toFixed(4)}`);
-        }
-
-        function initializeBboxes() {
-            Object.entries(cityConfigs).forEach(([cityKey, config]) => {
-                // Default bbox
-                const defaultKey = `${cityKey}_default`;
-                bboxLayers[defaultKey] = createBboxLayer(
-                    'Default', 
-                    config.default_bbox, 
-                    config.colors.default, 
-                    config.name
-                );
-                
-                // Zone bboxes
-                Object.entries(config.zone_bboxes).forEach(([zoneName, bbox]) => {
-                    const key = `${cityKey}_${zoneName}`;
-                    const color = config.colors[zoneName] || config.colors.default;
-                    bboxLayers[key] = createBboxLayer(zoneName, bbox, color, config.name);
-                });
-            });
-        }
-
-        function buildBboxList() {
-            const bboxList = document.getElementById('bbox-list');
-            bboxList.innerHTML = '';
-            
-            Object.entries(cityConfigs).forEach(([cityKey, config]) => {
-                // City header
-                const cityHeader = document.createElement('div');
-                cityHeader.style.cssText = 'padding: 8px 12px; background: #e9ecef; font-weight: bold; font-size: 12px;';
-                cityHeader.textContent = config.name;
-                bboxList.appendChild(cityHeader);
-                
-                // Default bbox
-                const defaultItem = document.createElement('div');
-                defaultItem.className = 'bbox-item';
-                defaultItem.innerHTML = `
-                    <div class="bbox-info">
-                        <div class="bbox-color" style="background-color: ${config.colors.default}"></div>
-                        <span>Default</span>
-                    </div>
-                    <button class="bbox-toggle" onclick="toggleBbox('${cityKey}_default')">Show</button>
-                `;
-                bboxList.appendChild(defaultItem);
-                
-                // Zone bboxes
-                Object.keys(config.zone_bboxes).forEach(zoneName => {
-                    const color = config.colors[zoneName] || config.colors.default;
-                    const item = document.createElement('div');
-                    item.className = 'bbox-item';
-                    item.innerHTML = `
-                        <div class="bbox-info">
-                            <div class="bbox-color" style="background-color: ${color}"></div>
-                            <span>${zoneName.replace(/_/g, ' ')}</span>
-                        </div>
-                        <button class="bbox-toggle" onclick="toggleBbox('${cityKey}_${zoneName}')">Show</button>
-                    `;
-                    bboxList.appendChild(item);
-                });
-            });
-        }
-
-        function toggleBbox(key) {
-            const layer = bboxLayers[key];
-            const button = event.target;
-            
-            if (map.hasLayer(layer)) {
-                map.removeLayer(layer);
-                button.textContent = 'Show';
-                button.classList.remove('active');
-            } else {
-                map.addLayer(layer);
-                button.textContent = 'Hide';
-                button.classList.add('active');
-            }
-        }
-
-        function toggleAllBboxes() {
-            const buttons = document.querySelectorAll('.bbox-toggle');
-            const anyActive = Array.from(buttons).some(btn => btn.classList.contains('active'));
-            
-            buttons.forEach(btn => {
-                const key = btn.getAttribute('onclick').match(/'([^']+)'/)[1];
-                const layer = bboxLayers[key];
-                
-                if (anyActive) {
-                    if (map.hasLayer(layer)) {
-                        map.removeLayer(layer);
-                        btn.textContent = 'Show';
-                        btn.classList.remove('active');
-                    }
-                } else {
-                    if (!map.hasLayer(layer)) {
-                        map.addLayer(layer);
-                        btn.textContent = 'Hide';
-                        btn.classList.add('active');
-                    }
-                }
-            });
-        }
-
-        function toggleBboxPanel() {
-            const panel = document.getElementById('bbox-panel');
-            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-        }
-
-        // Original functions (keeping existing functionality)
         function calculatePolygonArea(coordinates) {
             let area = 0;
             const n = coordinates.length;
@@ -294,16 +55,6 @@
             }
 
             return Math.abs(area) / 2;
-        }
-
-        function isClosedGeometry(geometry) {
-            if (!geometry.coordinates || geometry.coordinates.length < 3) return false;
-
-            const coords = geometry.coordinates;
-            const first = coords[0];
-            const last = coords[coords.length - 1];
-
-            return Math.abs(first[0] - last[0]) < 0.0000001 && Math.abs(first[1] - last[1]) < 0.0000001;
         }
 
         function getBoundingBoxArea(coordinates) {
@@ -338,7 +89,7 @@
             return unique;
         }
 
-        // 2. NEW: Merge polygon fragments
+        // 2. Merge polygon fragments
         function mergePolygonFragments(geometries) {
             const polygons = geometries.filter(g => g.type === 'Polygon');
             const others = geometries.filter(g => g.type !== 'Polygon');
@@ -478,7 +229,7 @@
                     }
                 }
                 
-                // Case 3: Mixed sizes but not extreme - check for fragment patterns
+                // Case 3: check for fragment patterns
                 if (sizeRatio < 10 && polygons.length >= 3) {
                     // Check if most polygons are small and similar
                     const smallPolygons = polygonData.filter(p => p.bboxArea < avgArea * 2);
@@ -523,69 +274,59 @@
             return largestGeometry;
         }
 
-        // DEBUGGING: Function to analyze what's happening with Vittorio Emanuele
-        function debugSquareGeometry(streetName, geometries) {
-            if (!streetName.toLowerCase().includes('vittorio') && !streetName.toLowerCase().includes('manfredo')) {
-                return; // Only debug these specific squares
-            }
-            
-            console.log(`\n🔍 === DEBUGGING ${streetName} ===`);
-            console.log(`Total geometries: ${geometries.length}`);
-            
-            const polygons = geometries.filter(g => g.type === 'Polygon');
-            console.log(`Polygons: ${polygons.length}`);
-            
-            polygons.forEach((polygon, index) => {
-                const coords = polygon.coordinates[0];
-                const bboxArea = getBoundingBoxArea(coords);
-                const pointCount = coords.length;
-                
-                console.log(`  Polygon ${index + 1}: ${pointCount} points, area: ${bboxArea.toFixed(10)}`);
-                
-                // Show first few coordinates
-                const firstCoords = coords.slice(0, 3).map(c => `[${c[0].toFixed(6)}, ${c[1].toFixed(6)}]`).join(', ');
-                console.log(`    First coords: ${firstCoords}...`);
-            });
-            
-            console.log(`=== END DEBUG ${streetName} ===\n`);
-        }
 
+function createSquarePolygon(geometries, metadata, streetName, ordId, zoneName) {
+    console.log(`🏛️ Creating square layers for: ${streetName} with ${geometries.length} geometries`);
+    
+    const layers = [];
+    const closedGeometries = geometries.filter(g => 
+        g.type === 'Polygon' || isClosedGeometry(g)
+    );
+    
+    const lineStringGeometries = geometries.filter(g => 
+        g.type === 'LineString' && !isClosedGeometry(g)
+    );
 
-        // UPDATED: Enhanced square creation with debugging
-        function createSquarePolygon(geometries, metadata, streetName, ordId, zoneName) {
-            console.log(`🏛️ Creating square polygon for: ${streetName} with ${geometries.length} geometries`);
-            
-            // Debug specific squares
-            debugSquareGeometry(streetName, geometries);
-            
-            const outerBoundary = findOuterBoundarySmartMerging(geometries);
-            if (!outerBoundary) {
-                console.warn(`❌ No boundary found for square: ${streetName}`);
-                return null;
-            }
+    console.log(`🏛️ Found ${closedGeometries.length} closed geometries and ${lineStringGeometries.length} LineStrings for ${streetName}`);
 
+    // First, add all individual closed geometries (existing polygons)
+    closedGeometries.forEach((geometry, index) => {
+        try {
             let coords;
-            if (outerBoundary.type === 'Polygon') {
-                coords = outerBoundary.coordinates[0];
+            if (geometry.type === 'Polygon') {
+                coords = geometry.coordinates[0];
             } else {
-                coords = outerBoundary.coordinates;
+                coords = geometry.coordinates;
             }
 
-            // Validate coordinates
             if (!coords || coords.length < 3) {
-                console.warn(`❌ Invalid coordinates for square: ${streetName}`);
-                return null;
+                console.warn(`❌ Invalid coordinates for geometry ${index} of ${streetName}: coords=${coords?.length || 'null'}`);
+                return;
             }
 
-            console.log(`✅ Creating polygon for ${streetName} with ${coords.length} points`);
-            const latLngs = coords.map(coord => [coord[0], coord[1]]);
+            // Validate each coordinate pair
+            const validCoords = coords.filter(coord => {
+                return Array.isArray(coord) && coord.length >= 2 && 
+                       typeof coord[0] === 'number' && typeof coord[1] === 'number' &&
+                       !isNaN(coord[0]) && !isNaN(coord[1]);
+            });
+
+            if (validCoords.length < 3) {
+                console.warn(`❌ Not enough valid coordinates for geometry ${index} of ${streetName}: ${validCoords.length}/${coords.length}`);
+                return;
+            }
+
+            console.log(`✅ Creating perimeter polygon ${index + 1} for ${streetName} with ${validCoords.length} valid points`);
+            console.log(`🔍 Sample coordinates:`, validCoords.slice(0, 3));
+            
+            const latLngs = validCoords.map(coord => [coord[0], coord[1]]);
 
             const layer = L.polygon(latLngs, {
                 color: '#dc3545',
                 fillColor: '#dc3545',
-                weight: 3,
+                weight: 2,
                 opacity: 0.8,
-                fillOpacity: 0.3,
+                fillOpacity: 0.2, // Lighter fill for perimeter polygons
                 smoothFactor: 0.5
             });
 
@@ -594,22 +335,313 @@
             layer.streetName = streetName;
             layer.specType = metadata.type;
             layer.isSquareArea = true;
-            layer.geometryType = 'Square/Area';
+            layer.geometryType = 'Square/Perimeter';
+            layer.geometryIndex = index;
 
-            // Add debug info
             let popupContent = createStandardPopup(streetName, zoneName, ordId);
-            if (outerBoundary.mergedFromFragments) {
-                popupContent += `<br><em>🔧 Merged from ${outerBoundary.mergedFromFragments} fragments</em>`;
-                console.log(`🔧 ${streetName} was merged from ${outerBoundary.mergedFromFragments} fragments`);
-            } else {
-                popupContent += `<br><em>📐 Used largest polygon (${coords.length} points)</em>`;
-            }
+            popupContent += `<br><em>📐 Perimeter Polygon ${index + 1} (${validCoords.length} points)</em>`;
             
             layer.bindPopup(popupContent);
-            return layer;
+            layers.push(layer);
+            
+        } catch (error) {
+            console.error(`⚠️ Failed to create layer for geometry ${index} of ${streetName}:`, error);
+            console.log(`🔍 Geometry data:`, geometry);
         }
+    });
 
+    // Second, try to find and fill inner areas surrounded by the polygons
+    if (closedGeometries.length >= 3) {
+        console.log(`🏛️ Attempting to find inner area surrounded by ${closedGeometries.length} perimeter polygons for ${streetName}`);
+        
+        const innerArea = findInnerAreaFromPerimeterPolygons(closedGeometries, streetName);
+        
+        if (innerArea && innerArea.length >= 3) {
+            console.log(`✅ Creating inner area polygon for ${streetName} with ${innerArea.length} points`);
+            const latLngs = innerArea.map(coord => [coord[0], coord[1]]);
 
+            const layer = L.polygon(latLngs, {
+                color: '#dc3545', // Green for inner area
+                fillColor: '#dc3545',
+                weight: 3,
+                opacity: 0.9,
+                fillOpacity: 0.5, // More opaque for the actual square area
+                smoothFactor: 0.5
+            });
+
+            layer.ordId = ordId;
+            layer.zoneName = zoneName;
+            layer.streetName = streetName;
+            layer.specType = metadata.type;
+            layer.isSquareArea = true;
+            layer.geometryType = 'Square/InnerArea';
+            layer.geometryIndex = 'inner';
+
+            let popupContent = createStandardPopup(streetName, zoneName, ordId);
+            popupContent += `<br><em>🏛️ Inner Square Area (${innerArea.length} points)</em>`;
+            
+            layer.bindPopup(popupContent);
+            layers.push(layer);
+        }
+    }
+
+    // Third, handle LineString segments (if any)
+    if (lineStringGeometries.length > 0) {
+        console.log(`🔗 Attempting to connect ${lineStringGeometries.length} LineString segments for ${streetName}`);
+        
+        const connectedPolygons = connectLineStringsToPolygons(lineStringGeometries, streetName);
+        
+        connectedPolygons.forEach((polygon, index) => {
+            console.log(`✅ Creating connected polygon ${index + 1} for ${streetName} with ${polygon.length} points`);
+            const latLngs = polygon.map(coord => [coord[0], coord[1]]);
+
+            const layer = L.polygon(latLngs, {
+                color: '#dc3545',
+                fillColor: '#dc3545',
+                weight: 2,
+                opacity: 0.8,
+                fillOpacity: 0.4,
+                smoothFactor: 0.5
+            });
+
+            layer.ordId = ordId;
+            layer.zoneName = zoneName;
+            layer.streetName = streetName;
+            layer.specType = metadata.type;
+            layer.isSquareArea = true;
+            layer.geometryType = 'Square/Connected';
+            layer.geometryIndex = closedGeometries.length + index;
+
+            let popupContent = createStandardPopup(streetName, zoneName, ordId);
+            popupContent += `<br><em>🔗 Connected Polygon ${index + 1} (${polygon.length} points)</em>`;
+            
+            layer.bindPopup(popupContent);
+            layers.push(layer);
+        });
+    }
+
+    console.log(`✅ Created ${layers.length} total layers for ${streetName}`);
+    
+    return layers.length > 0 ? layers : null;
+}
+
+function findInnerAreaFromPerimeterPolygons(polygons, streetName) {
+    if (polygons.length < 3) return null;
+    
+    // Get all coordinates from all polygons
+    const allCoords = [];
+    const perimeterCoords = [];
+    
+    polygons.forEach(polygon => {
+        let coords;
+        if (polygon.type === 'Polygon') {
+            coords = polygon.coordinates[0];
+        } else {
+            coords = polygon.coordinates;
+        }
+        
+        if (coords && coords.length > 0) {
+            allCoords.push(...coords);
+            perimeterCoords.push(coords);
+        }
+    });
+    
+    if (allCoords.length === 0) return null;
+    
+    // Find the centroid of all coordinates
+    const centroid = findCentroid(allCoords);
+    console.log(`📍 Centroid for ${streetName}:`, centroid);
+    
+    // For each polygon, find the points/edges that are closest to the centroid
+    const innerPoints = [];
+    
+    perimeterCoords.forEach((coords, polygonIndex) => {
+        const closestPoints = findClosestPointsToCenter(coords, centroid);
+        innerPoints.push(...closestPoints);
+        console.log(`🎯 Polygon ${polygonIndex + 1}: found ${closestPoints.length} inner points`);
+    });
+    
+    if (innerPoints.length < 3) return null;
+    
+    // Create a convex hull from the inner points to form the inner area
+    const innerBoundary = createConvexHull(innerPoints);
+    
+    // Ensure the polygon is closed
+    if (innerBoundary.length >= 3) {
+        const first = innerBoundary[0];
+        const last = innerBoundary[innerBoundary.length - 1];
+        if (!arePointsClose(first, last)) {
+            innerBoundary.push(first); // Close the polygon
+        }
+    }
+    
+    console.log(`🏛️ Created inner boundary with ${innerBoundary.length} points for ${streetName}`);
+    return innerBoundary;
+}
+
+function findCentroid(points) {
+    const sum = points.reduce((acc, point) => {
+        return [acc[0] + point[0], acc[1] + point[1]];
+    }, [0, 0]);
+    
+    return [sum[0] / points.length, sum[1] / points.length];
+}
+
+function findClosestPointsToCenter(coords, centroid, maxPoints = 3) {
+    // Calculate distances of all points to centroid
+    const pointDistances = coords.map((point, index) => ({
+        point: point,
+        distance: Math.sqrt(Math.pow(point[0] - centroid[0], 2) + Math.pow(point[1] - centroid[1], 2)),
+        index: index
+    }));
+    
+    // Sort by distance and take the closest points
+    pointDistances.sort((a, b) => a.distance - b.distance);
+    
+    // Take up to maxPoints closest points
+    return pointDistances.slice(0, maxPoints).map(pd => pd.point);
+}
+
+function createConvexHull(points) {
+    if (points.length < 3) return points;
+    
+    // Simple convex hull algorithm (Gift wrapping)
+    // Find the leftmost point
+    let leftmost = 0;
+    for (let i = 1; i < points.length; i++) {
+        if (points[i][1] < points[leftmost][1] || 
+            (points[i][1] === points[leftmost][1] && points[i][0] < points[leftmost][0])) {
+            leftmost = i;
+        }
+    }
+    
+    const hull = [];
+    let current = leftmost;
+    
+    do {
+        hull.push(points[current]);
+        let next = (current + 1) % points.length;
+        
+        for (let i = 0; i < points.length; i++) {
+            if (orientation(points[current], points[i], points[next]) === 2) {
+                next = i;
+            }
+        }
+        
+        current = next;
+    } while (current !== leftmost && hull.length < points.length);
+    
+    return hull;
+}
+
+function orientation(p, q, r) {
+    const val = (q[1] - p[1]) * (r[0] - q[0]) - (q[0] - p[0]) * (r[1] - q[1]);
+    if (val === 0) return 0; // collinear
+    return (val > 0) ? 1 : 2; // clockwise or counterclockwise
+}
+
+function connectLineStringsToPolygons(lineStrings, streetName) {
+    if (lineStrings.length === 0) return [];
+    
+    const polygons = [];
+    const usedSegments = new Set();
+    
+    for (let i = 0; i < lineStrings.length; i++) {
+        if (usedSegments.has(i)) continue;
+        
+        const polygon = buildPolygonFromSegment(lineStrings, i, usedSegments);
+        if (polygon && polygon.length >= 3) {
+            polygons.push(polygon);
+            console.log(`🔗 Built polygon from segments starting at ${i} for ${streetName}`);
+        }
+    }
+    
+    return polygons;
+}
+
+function buildPolygonFromSegment(lineStrings, startIndex, usedSegments) {
+    const polygon = [];
+    const currentSegment = lineStrings[startIndex];
+    
+    if (!currentSegment || !currentSegment.coordinates) return null;
+    
+    polygon.push(...currentSegment.coordinates);
+    usedSegments.add(startIndex);
+    
+    let currentEndPoint = currentSegment.coordinates[currentSegment.coordinates.length - 1];
+    const startPoint = currentSegment.coordinates[0];
+    const maxIterations = lineStrings.length;
+    let iterations = 0;
+    
+    while (iterations < maxIterations) {
+        iterations++;
+        
+        if (arePointsClose(currentEndPoint, startPoint)) {
+            if (!arePointsClose(polygon[polygon.length - 1], polygon[0])) {
+                polygon.push(polygon[0]);
+            }
+            console.log(`✅ Closed polygon with ${polygon.length} points`);
+            return polygon;
+        }
+        
+        let foundConnection = false;
+        for (let j = 0; j < lineStrings.length; j++) {
+            if (usedSegments.has(j)) continue;
+            
+            const segment = lineStrings[j];
+            if (!segment || !segment.coordinates) continue;
+            
+            const segmentStart = segment.coordinates[0];
+            const segmentEnd = segment.coordinates[segment.coordinates.length - 1];
+            
+            if (arePointsClose(currentEndPoint, segmentStart)) {
+                polygon.push(...segment.coordinates.slice(1));
+                currentEndPoint = segmentEnd;
+                usedSegments.add(j);
+                foundConnection = true;
+                break;
+            } else if (arePointsClose(currentEndPoint, segmentEnd)) {
+                const reversedCoords = [...segment.coordinates].reverse();
+                polygon.push(...reversedCoords.slice(1));
+                currentEndPoint = segmentStart;
+                usedSegments.add(j);
+                foundConnection = true;
+                break;
+            }
+        }
+        
+        if (!foundConnection) break;
+    }
+    
+    if (polygon.length >= 3 && arePointsClose(currentEndPoint, startPoint)) {
+        if (!arePointsClose(polygon[polygon.length - 1], polygon[0])) {
+            polygon.push(polygon[0]);
+        }
+        console.log(`✅ Created partial polygon with ${polygon.length} points`);
+        return polygon;
+    }
+    
+    return null;
+}
+
+function arePointsClose(point1, point2, threshold = 0.00001) {
+    if (!point1 || !point2) return false;
+    return Math.abs(point1[0] - point2[0]) < threshold && 
+           Math.abs(point1[1] - point2[1]) < threshold;
+}
+
+function isClosedGeometry(geometry) {
+    if (!geometry || !geometry.coordinates || geometry.coordinates.length < 3) {
+        return false;
+    }
+    
+    const coords = geometry.coordinates;
+    const first = coords[0];
+    const last = coords[coords.length - 1];
+    
+    const threshold = 0.00001;
+    return Math.abs(first[0] - last[0]) < threshold && Math.abs(first[1] - last[1]) < threshold;
+}
 
         // 5. UPDATED: Enhanced street geometry processing
         function processStreetGeometries(streetData, streetName, ordId, zoneName) {
@@ -621,7 +653,7 @@
             }
 
             const metadata = streetData.metadata || {};
-            const isCivic = metadata.type === 'civic' || streetName.includes('civico');
+            const isCivic = metadata.type === 'civico'
 
             console.log(`🔍 Processing ${streetName}: type=${metadata.type}, civic=${isCivic}`);
 
@@ -722,15 +754,20 @@
             const isSquare = metadata.type === 'square' || 
                             streetName.toLowerCase().includes('piazza') ||
                             streetName.toLowerCase().includes('piazzale') ||
-                            streetName.toLowerCase().includes('largo');
+                            streetName.toLowerCase().includes('largo') ||
+                            streetName.toLowerCase().includes('quartiere');
 
             if (isSquare && closedGeometries.length >= 1) {
                 console.log(`🏛️ Treating ${streetName} as square with ${geometries.length} geometries`);
-                const squareLayer = createSquarePolygon(geometries, metadata, streetName, ordId, zoneName);
-                if (squareLayer) {
-                    layers.push(squareLayer);
+                const squareLayers = createSquarePolygon(geometries, metadata, streetName, ordId, zoneName);
+                if (squareLayers && Array.isArray(squareLayers)) {
+                    // Add each square layer to the main layers array
+                    squareLayers.forEach(layer => {
+                        layers.push(layer);
+                    });
+                    console.log(`✅ Added ${squareLayers.length} square layers for ${streetName}`);
                 } else {
-                    console.warn(`⚠️ Failed to create square layer for ${streetName}`);
+                    console.warn(`⚠️ Failed to create square layers for ${streetName}`);
                 }
             } else {
                 console.log(`🛣️ Treating ${streetName} as street with individual geometries`);
@@ -751,7 +788,7 @@
             const ordData = coordinatesData[ordId];
             const protocol = ordData?.metadata?.protocol || ordId;
             const date = ordData?.metadata?.date || '';
-            const ordinanceTitle = `Prot. n. ${protocol}${date ? ` (${date})` : ''}`;
+            const ordinanceTitle = `${protocol}${date ? ` (${date})` : ''}`;
             
             return `<strong>${streetName}</strong><br><em>Zona:</em> ${zoneName}<br><em>Ordinanza:</em> ${ordinanceTitle}`;
         }
@@ -909,7 +946,7 @@
 
                 const protocol = ordData.metadata?.protocol || ordId;
                 const date = ordData.metadata?.date || '';
-                const ordinanceTitle = `Prot. n. ${protocol}${date ? ` (${date})` : ''}`;
+                const ordinanceTitle = `${protocol}${date ? ` (${date})` : ''}`;
 
                 const ordHeader = document.createElement('div');
                 ordHeader.className = 'ordinance-header';
@@ -1319,8 +1356,6 @@
 
         // Initialize everything
         loadCoordinates();
-        initializeBboxes();
-        buildBboxList();
     </script>
 </body>
 </html>

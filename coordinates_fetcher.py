@@ -244,6 +244,7 @@ class CoordinatesFetcher:
     def _generate_variants(self, name: str, city: CityConfig) -> List[str]:
         """Generate search variants for a place name"""
         variants = [name]
+        #return variants
         
         # First, extract base name by removing common prefixes
         prefixes = ["Via ", "Viale ", "Piazza ", "Piazzale ", "Corso ", "Largo "]
@@ -448,46 +449,24 @@ class CoordinatesFetcher:
             # Search by name if available
             if name:
                 escaped_name = name.replace('"', '\\"')
-                
-                # SMART QUERY: Prioritize proper square/plaza tags
-                if 'piazza' in name.lower() or (original_place_name and 'piazza' in original_place_name.lower()):
-                    # For squares/piazzas, prioritize proper landuse/leisure tags
-                    smart_query = f'''[out:json][timeout:30];
-                    (
-                    // Priority 1: Proper square/plaza areas
-                    way[name="{escaped_name}"][leisure~"^(plaza|square)$"]({south},{west},{north},{east});
-                    way[name="{escaped_name}"][place~"^(square|plaza)$"]({south},{west},{north},{east});
-                    way[name="{escaped_name}"][landuse="retail"][area="yes"]({south},{west},{north},{east});
-                    
-                    // Priority 2: Large closed ways (likely main boundaries)
-                    way[name="{escaped_name}"]["area"="yes"]({south},{west},{north},{east});
-                    
-                    // Priority 3: Relations containing the square
-                    rel[name="{escaped_name}"]["type"="multipolygon"]({south},{west},{north},{east});
-                    
-                    // Priority 4: Fallback - but exclude small/platform stuff
-                    way[name="{escaped_name}"][!"railway"][!"public_transport"]({south},{west},{north},{east});
-                    );
-                    out geom;'''
-                else:
-                    # For streets, use existing logic
-                    smart_query = f'[out:json]; way[name="{escaped_name}"]({south},{west},{north},{east}); out geom;'
-                
-                response = self.session.post(
-                    "http://overpass-api.de/api/interpreter", 
-                    data=smart_query, timeout=30
-                )
-                time.sleep(1.0)
-                
-                if response.status_code != 200:
-                    return []
-                
-                elements = response.json().get('elements', [])
-                
-                # POST-PROCESS: Filter out tiny fragments for squares
-                if 'piazza' in name.lower() or (original_place_name and 'piazza' in original_place_name.lower()):
-                    elements = self._filter_square_elements(elements)
-                                
+                # Try exact match first
+                query2 = f'[out:json]; way[name="{escaped_name}"]({south},{west},{north},{east}); out geom;'
+            else:
+                # Search by amenity=marketplace
+                query2 = f'[out:json]; (way[amenity="marketplace"]({south},{west},{north},{east}); node[amenity="marketplace"]({south},{west},{north},{east});); out geom;'
+            
+            response = self.session.post(
+                "http://overpass-api.de/api/interpreter", 
+                data=query2, timeout=30
+            )
+            time.sleep(1.0)
+            
+            if response.status_code != 200:
+                return []
+            
+            geometries = []
+            elements = response.json().get('elements', [])
+            
             # If exact match failed and we have a name, try case-insensitive regex
             if not elements and name:
                 # Use original place name if provided, otherwise fall back to OSM element name
@@ -722,32 +701,28 @@ class CoordinatesFetcher:
                                 lat, lon = geom[0]['lat'], geom[0]['lon']
                                 if self._is_inside_bbox([lat, lon], city.default_bbox):
                                     geometries.append({'type': 'Point', 'coordinates': [lat, lon]})
-                    
-                    if geometries:
-                        # Filter by zone bboxes if available
-                        if zone_bboxes:
-                            all_filtered = []
-                            for zone_bbox in zone_bboxes:
-                                filtered_geoms, _ = self._filter_geometries(geometries, zone_bbox, "zone")
-                                all_filtered.extend(filtered_geoms)
-                            # Remove duplicates
-                            unique_geoms = []
-                            for geom in all_filtered:
-                                if geom not in unique_geoms:
-                                    unique_geoms.append(geom)
-                            geometries = unique_geoms
-                        
-                        if geometries:
-                            self.cache[cache_key] = {
-                                'type': 'civic',
-                                'geometries': geometries
-                            }
-                            return True
                         
             except Exception:
                 continue
-        
-        return False
+
+            if geometries:
+                break
+        if geometries:
+            # Filter by zone bboxes if available
+            if zone_bboxes:
+                all_filtered = []
+                for zone_bbox in zone_bboxes:
+                    filtered_geoms, _ = self._filter_geometries(geometries, zone_bbox, "zone")
+                    all_filtered.extend(filtered_geoms)
+                # Remove duplicates
+                unique_geoms = []
+                for geom in all_filtered:
+                    if geom not in unique_geoms:
+                        unique_geoms.append(geom)
+                geometries = unique_geoms
+
+                return True
+            return False
 
     def fetch_place(self, place_name: str, city_prefix: str, zones_info: Dict[str, Set[str]]) -> bool:
         """Fetch coordinates for a place with zone-based filtering"""
@@ -864,8 +839,8 @@ class CoordinatesFetcher:
         print("🔍 Parsing ordinances...")
         start = 0
         for ord_id, ord_data in ordinances.items():
-            start +=1
-            if start > 2:
+            start += 1
+            if start > 4:
                 break
             city_prefix = self._detect_city(ord_id)
             if not city_prefix or city_prefix not in CITIES:

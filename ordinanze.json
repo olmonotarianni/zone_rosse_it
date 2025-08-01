@@ -1,6 +1,6 @@
 {
   "RM_ordinance_6747": {
-    "protocol": "6747",
+    "protocol": "Roma - Prima ordinanza (ord. 6747)",
     "date": "2025-01-08",
     "validity": {
       "start": "2025-01-08",
@@ -35,7 +35,7 @@
     }
   },
   "RM_ordinance_133331": {
-    "protocol": "133331",
+    "protocol": "Roma - Proroga 1 (ord. 133331)",
     "date": "2025-03-26",
     "validity": {
       "start": "2025-03-26",
@@ -78,7 +78,7 @@
     }
   }, 
   "MI_ordinance_122024": {
-    "protocol": "MI-12/2024",
+    "protocol": "Milano - Prima ordinanza",
     "date": "2024-12-27",
     "validity": {
       "start": "2024-12-30",
@@ -197,7 +197,7 @@
     }
   },
   "MI_2025_03_26_PROROGA": {
-    "protocol": "MI_26_03",
+    "protocol": "Milano - Proroga 1",
     "date": "26/03/2025",
     "title": "Proroga ordinanza zone rosse - Estensione a Via Padova, Colonne di San Lorenzo e Quartiere dei Fiori (Rozzano)",
     "zones": {
@@ -284,7 +284,7 @@
         "Via Mortara",
         "Viale Gorizia",
         "Piazza XXIV Maggio (lato Mercato Comunale/Darsena)",
-        "Corso di Porta Ticinese (lato numeri pari)",
+        "Corso di Porta Ticinese",
         "Vicolo Calusca",
         "Via Scaldasole",
         "Via Pietro Panzeri",
@@ -382,7 +382,7 @@
         "Via Gerani",
         "Via degli Ulivi",
         "Via Bucaneve",
-        "Via Liguria",
+        "Viale Liguria",
         "Via Torino",
         "Viale Lombardia",
         "Viale Don Angelo Lonni",
@@ -392,7 +392,7 @@
     }
   },
     "BO_2025_04_07_PROROGA": {
-    "protocol": "BO_07_04",
+    "protocol": "Bologna - proroga 1",
     "date": "07/04/2025",
     "title": "Proroga divieto di stazionamento fino al 15 settembre 2025 - Zone sensibili Bologna",
     "zones": {
@@ -442,7 +442,7 @@
     }
   },
     "PD_2025_02_04": {
-    "protocol": "PD_04_02",
+    "protocol": "Padova - prima ordinanza",
     "date": "04/02/2025",
     "title": "Divieto di stazionamento zone sensibili Padova - Vigente dal 6 febbraio al 6 aprile 2025",
     "zones": {
@@ -480,7 +480,7 @@
     }
   },
   "PD_2025_05_13": {
-    "protocol": "PD_13_05",
+    "protocol": "Padova - Proroga 1",
     "date": "13/05/2025",
     "title": "Zona rossa Quartiere Arcella - Padova",
     "zones": {

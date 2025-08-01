@@ -77,12 +77,18 @@ def extract_all_coordinates(place_data: Dict, zone_bbox: Optional[Tuple[float, f
         coords = geom.get('coordinates', [])
         if geom.get('type') == 'Polygon':
             coords = coords[0]  # Outer ring
-        for coord in coords:
-            if len(coord) >= 2:
-                point = (coord[0], coord[1])
-                # Filter by zone bbox if provided
-                if zone_bbox is None or is_coordinate_in_bbox(point, zone_bbox):
-                    points.append(point)
+            
+        if geom["type"] == "Point":      
+            # Single point, coordinates is a list of 2 floats
+            if isinstance(geom["coordinates"], list) and len(geom["coordinates"]) == 2:
+                coords.append(geom["coordinates"])
+        else:
+            for coord in coords:
+                if len(coord) >= 2:
+                    point = (coord[0], coord[1])
+                    # Filter by zone bbox if provided
+                    if zone_bbox is None or is_coordinate_in_bbox(point, zone_bbox):
+                        points.append(point)
     
     # From special coordinates (Points)
     for special in place_data.get('special_coordinates', []):
@@ -325,17 +331,6 @@ class PlacesEmbedder:
         """Parse location specification into structured data"""
         spec = specification.strip()
         
-        # Civic number pattern
-        civico_match = re.search(r'^(.+?)\s*\(fronte civico (\d+)\)$', spec)
-        if civico_match:
-            return {
-                'type': 'civico',
-                'primary': civico_match.group(1).strip(),
-                'civic_number': civico_match.group(2),
-                'places': [civico_match.group(1).strip(), f"{civico_match.group(1).strip()} civico {civico_match.group(2)}"]
-            }
-        
-        # Tract pattern
         tratto_match = re.search(r'^(.+?)\s+tratto compreso tra (.+?)$', spec)
         if tratto_match:
             primary = tratto_match.group(1).strip()
@@ -345,6 +340,15 @@ class PlacesEmbedder:
                 'primary': primary,
                 'endpoints': endpoints,
                 'places': [primary] + endpoints
+            }
+        
+        civico_match = re.search(r'^(.+?)\s*\(fronte civico (\d+)\)$', spec)
+        if civico_match:
+            return {
+                'type': 'civico',
+                'primary': civico_match.group(1).strip(),
+                'civic_number': civico_match.group(2),
+                'places': [civico_match.group(1).strip(), f"{civico_match.group(1).strip()} civico {civico_match.group(2)}"]
             }
         
         # Intersection pattern
@@ -369,46 +373,66 @@ class PlacesEmbedder:
     def get_place_data(self, place_name: str, city_config: Optional[CityConfig] = None) -> Optional[Dict]:
         """Get place data from catalog with city prefix handling"""
         
-        # FORCED DEBUG for civics
+        # ADD THIS DEBUG
         if 'civico' in place_name:
             print(f"🔍 LOOKING UP: {place_name}")
         
-        # Try direct lookup first
-        if place_name in self.places_catalog:
-            if 'civico' in place_name:
-                print(f"✅ FOUND DIRECT: {place_name}")
-            return self.places_catalog[place_name]
-            
-        # If we have city config, try with city prefix
-        if city_config and city_config.city_name in CITY_PREFIXES:
-            city_prefix = CITY_PREFIXES[city_config.city_name]
-            prefixed_name = f"{city_prefix}_{place_name}"
-            if prefixed_name in self.places_catalog:
-                return self.places_catalog[prefixed_name]
+        # ADD CIVIC NAME NORMALIZATION
+        normalized_names = [place_name]
         
-        # Try all city prefixes as fallback
-        for prefix in CITY_PREFIXES.values():
-            prefixed_name = f"{prefix}_{place_name}"
-            if prefixed_name in self.places_catalog:
-                return self.places_catalog[prefixed_name]
+        # Convert "(fronte civico X)" to "civico X" format
+        if 'fronte civico' in place_name:
+            normalized = re.sub(r'\(fronte civico (\d+)\)', r'civico \1', place_name)
+            normalized_names.append(normalized)
+            if 'civico' in place_name:
+                print(f"🔄 Normalized: '{place_name}' → '{normalized}'")
+        
+        # Try all normalized names
+        for name_to_try in normalized_names:
+            # Try direct lookup first
+            if name_to_try in self.places_catalog:
+                if 'civico' in place_name:
+                    print(f"✅ FOUND DIRECT: {name_to_try}")
+                return self.places_catalog[name_to_try]
+                
+            # If we have city config, try with city prefix
+            if city_config and city_config.city_name in CITY_PREFIXES:
+                city_prefix = CITY_PREFIXES[city_config.city_name]
+                prefixed_name = f"{city_prefix}_{name_to_try}"
+                if prefixed_name in self.places_catalog:
+                    if 'civico' in place_name:
+                        print(f"✅ FOUND WITH PREFIX: {prefixed_name}")
+                    return self.places_catalog[prefixed_name]
+            
+            # Try all city prefixes as fallback
+            for prefix in CITY_PREFIXES.values():
+                prefixed_name = f"{prefix}_{name_to_try}"
+                if prefixed_name in self.places_catalog:
+                    if 'civico' in place_name:
+                        print(f"✅ FOUND WITH FALLBACK PREFIX: {prefixed_name}")
+                    return self.places_catalog[prefixed_name]
         
         return None
     
     def process_specification(self, specification: str, zone_name: str, ord_id: str, city_config: Optional[CityConfig] = None) -> Dict:
         """Process a single specification and return visualization data with zone filtering"""
         
-        # FORCED DEBUG - this should ALWAYS print
-        # print(f"🔍 PROCESSING: {specification}")
-        if 'Tuscolana' in specification:
-            print(f"🏠 *** TUSCOLANA FOUND: {specification} ***")
+        # ADD THIS BROAD DEBUG FIRST
+        if 'padova' in specification.lower() and 'tratto' in specification.lower():
+            print(f"🚨🚨🚨 FOUND PADOVA TRACT: '{specification}'")
+            print(f"   Zone: {zone_name}, Ord: {ord_id}")
         
         parsed = self.parse_specification(specification)
         spec_type = parsed['type']
         
-        # print(f"    Type: {spec_type}")
-        if 'Tuscolana' in specification:
-            print(f"    Parsed: {parsed}")   
-
+        # ADD THIS DEBUG TOO
+        if 'padova' in specification.lower() and 'tratto' in specification.lower():
+            print(f"   Parsed type: {spec_type}")
+            print(f"   Parsed data: {parsed}")
+        
+        parsed = self.parse_specification(specification)
+        spec_type = parsed['type']
+        
         # Get zone bbox for filtering
         zone_bbox = None
         if city_config:
@@ -447,9 +471,10 @@ class PlacesEmbedder:
         
         # Process based on specification type
         if spec_type == 'simple':
-            # Simple place - just show the place
+
             primary_data = place_data.get(parsed['primary'])
             if primary_data:
+                result['metadata']['type'] = primary_data.get('type', 'street')
                 # Filter geometries and special coordinates by zone bbox
                 if zone_bbox:
                     result['geometries'] = filter_geometries_by_bbox(primary_data.get('geometries', []), zone_bbox)
@@ -523,16 +548,52 @@ class PlacesEmbedder:
         
         elif spec_type == 'tratto':
             # Tract - compute segment between endpoints with zone filtering
+            
+            # ADD THIS DEBUG BLOCK
+            if 'padova' in specification.lower():
+                print(f"🚨 DEBUGGING TRACT: '{specification}'")
+                print(f"   Parsed primary: '{parsed['primary']}'")
+                print(f"   Parsed endpoints: {parsed['endpoints']}")
+                print(f"   Available places in catalog: {list(place_data.keys())}")
+            
             primary_data = place_data.get(parsed['primary'])
             endpoint1_data = place_data.get(parsed['endpoints'][0]) if len(parsed['endpoints']) > 0 else None
             endpoint2_data = place_data.get(parsed['endpoints'][1]) if len(parsed['endpoints']) > 1 else None
             
+            # ADD MORE DEBUG
+            if 'padova' in specification.lower():
+                print(f"   Primary data found: {primary_data is not None}")
+                print(f"   Endpoint1 '{parsed['endpoints'][0]}' found: {endpoint1_data is not None}")
+                print(f"   Endpoint2 '{parsed['endpoints'][1]}' found: {endpoint2_data is not None}")
+                
+                if primary_data:
+                    print(f"   Primary geometries: {len(primary_data.get('geometries', []))}")
+                if endpoint1_data:
+                    print(f"   Endpoint1 geometries: {len(endpoint1_data.get('geometries', []))}")
+                if endpoint2_data:
+                    print(f"   Endpoint2 geometries: {len(endpoint2_data.get('geometries', []))}")
+            
             if primary_data and endpoint1_data and endpoint2_data:
+                # ADD EVEN MORE DEBUG
+                if 'padova' in specification.lower():
+                    print(f"   🎯 All data found, calling compute_tract_segment...")
+                
                 tract_geometries = compute_tract_segment(primary_data, endpoint1_data, endpoint2_data, zone_bbox=zone_bbox)
+                
+                if 'padova' in specification.lower():
+                    print(f"   📐 Tract geometries returned: {len(tract_geometries)}")
+                    for i, geom in enumerate(tract_geometries):
+                        print(f"      Geom {i}: type={geom.get('type')}, coords={len(geom.get('coordinates', []))}")
+                
                 result['geometries'] = tract_geometries
                 result['metadata']['display_mode'] = 'tract_only'
                 result['metadata']['tract_calculated'] = True
             else:
+                # ADD DEBUG FOR FALLBACK
+                if 'padova' in specification.lower():
+                    print(f"   ⚠️ Missing data, falling back to available places...")
+                    print(f"   Available place data keys: {list(place_data.keys())}")
+                
                 # Fallback: show available places with zone filtering
                 for data in place_data.values():
                     if zone_bbox:
@@ -597,17 +658,8 @@ class PlacesEmbedder:
                 
                 for specification in specifications:
                     stats['total_specifications'] += 1
-                    
-                    # ADD THIS DEBUG
-                    if 'Tuscolana' in specification:
-                        print(f"🚨 ABOUT TO PROCESS TUSCOLANA: '{specification}'")
-                    
-                    result = self.process_specification(specification, zone_name, ord_id, city_config)
-                    
-                    # ADD THIS DEBUG TOO
-                    if 'Tuscolana' in specification:
-                        print(f"🚨 TUSCOLANA RESULT: {result}")
-                    
+                                        
+                    result = self.process_specification(specification, zone_name, ord_id, city_config)            
                     coordinates_data[ord_id]['zones'][zone_name][specification] = result
                     
                     # Update stats
@@ -645,20 +697,7 @@ class PlacesEmbedder:
         """Embed processed coordinates into HTML viewer"""
         print(f"🚨 EMBEDDING STARTED!")
         print(f"🌐 Embedding into HTML viewer...")
-        
-        # Check if our civic exists in ordinances
-        found_tuscolana = False
-        for ord_id, ord_data in self.ordinances.items():
-            for zone_name, specifications in ord_data.get('zones', {}).items():
-                for spec in specifications:
-                    if 'Tuscolana' in spec and 'civico' in spec:
-                        print(f"🏠 FOUND TUSCOLANA SPEC: '{spec}' in {ord_id}/{zone_name}")
-                        found_tuscolana = True
-        
-        if not found_tuscolana:
-            print(f"❌ TUSCOLANA CIVIC NOT FOUND IN ORDINANCES!")  
 
-        print(f"🔍 About to call process_all_ordinances()...")
         coordinates_data = self.process_all_ordinances()
         print(f"🔍 process_all_ordinances() completed!")
         print(f"📊 Coordinates data keys: {list(coordinates_data.keys())}")
@@ -666,14 +705,6 @@ class PlacesEmbedder:
 
         # Process all ordinances
         coordinates_data = self.process_all_ordinances()
-
-        if 'RM_ordinance_6747' in coordinates_data:
-            tuscolano_zone = coordinates_data['RM_ordinance_6747'].get('zones', {}).get('Zona Tuscolano', {})
-            print(f"🏠 Zona Tuscolano has {len(tuscolano_zone)} specifications")
-            for spec_name in tuscolano_zone.keys():
-                if 'Tuscolana' in spec_name:
-                    print(f"🎯 Found: {spec_name}")
-                    print(f"    Data: {tuscolano_zone[spec_name]}")
 
 
         # Load HTML template
